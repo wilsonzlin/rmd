@@ -1,5 +1,6 @@
 import {SourceError} from "./err/SourceError";
-import {InternalError} from "./err/InternalError";
+import {TextFilePosition} from "./util/IPosition";
+import {assertReason} from "./err/InternalError";
 
 export interface Predicate {
   (char: string): boolean;
@@ -24,7 +25,7 @@ export class Code {
   }
 
   private constructSourceError (msg: string): SourceError {
-    return new SourceError(msg, this.sourceName, this.line, this.col);
+    return new SourceError(msg, new TextFilePosition(this.sourceName, this.line, this.col));
   }
 
   private assertNotEOF (str: string): string {
@@ -66,9 +67,7 @@ export class Code {
   }
 
   skipAmount (len: number): number {
-    if (this.next + len > this.source.length) {
-      throw new InternalError("Skip amount exceeds EOF");
-    }
+    assertReason(this.next + len > this.source.length, "Skip amount exceeds EOF");
     for (let i = 0; i < len; i++) {
       this.incrementNext();
     }

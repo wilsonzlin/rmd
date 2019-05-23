@@ -14,13 +14,9 @@
     >   >
     >   >   continued
     >   >
-    >   >               continued
-    >   >> illegal
     >   > > legal
-    >   >  > illegal
-    >   >   > legal
-    >   >    > illegal
-    >   >     > illegal
+    >   > > > legal
+    >   > > > > legal
 
 # Title
 
@@ -64,7 +60,7 @@ code block
 
 - Multilevel list
   - Second level unordered
-    1. Third level ordered
+    ' Third level ordered
       - Fourth level ordered
         ```code
         some code on the fourth level beneath item 1
