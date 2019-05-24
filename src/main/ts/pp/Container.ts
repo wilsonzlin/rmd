@@ -1,18 +1,18 @@
 import {trimRight} from "../util/String";
-import {TextFilePosition} from "../util/IPosition";
+import {TextPosition} from "../util/Position";
 import {Chunk} from "./Chunk";
 
 export type ContainerType = "DOCUMENT" | "UNORDERED_LIST_ITEM" | "ORDERED_LIST_ITEM" | "QUOTE" | "DEFINITION";
 
 export class Container {
-  readonly position: TextFilePosition;
+  readonly position: TextPosition;
   readonly type: ContainerType;
   readonly parent: Container | null;
   readonly indentation: string;
   private readonly _blankPrefix: string;
   readonly contents: Chunk[];
 
-  constructor (position: TextFilePosition, type: ContainerType, parent: Container | null, indentation: string) {
+  constructor (position: TextPosition, type: ContainerType, parent: Container | null, indentation: string) {
     this.position = position;
     this.type = type;
     this.parent = parent;

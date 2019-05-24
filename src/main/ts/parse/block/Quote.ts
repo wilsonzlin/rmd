@@ -1,18 +1,26 @@
 import {Chunks} from "../../pp/Chunk";
 import {Container} from "../../pp/Container";
-import {Block, parseBlocks} from "./Block";
+import {Block} from "./Block";
 import {configurableSyntaxParser} from "../Configuration";
+import {TextPosition} from "../../util/Position";
+import {parseBlocks} from "./Blocks";
 
-export type Quote = {
-  contents: Block[];
-};
+export class Quote extends Block {
+  readonly contents: Block[];
+
+  constructor (position: TextPosition, contents: Block[]) {
+    super(position);
+    this.contents = contents;
+  }
+}
 
 export const parseQuote = configurableSyntaxParser(chunks => {
   // TODO Validation
   const rawQuote = chunks.accept() as Container;
 
-  return {
+  return new Quote(
+    rawQuote.position,
     // TODO Validation
-    contents: parseBlocks(new Chunks(rawQuote.contents)),
-  };
+    parseBlocks(new Chunks(rawQuote.contents))
+  );
 }, {});

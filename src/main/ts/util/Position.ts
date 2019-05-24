@@ -2,12 +2,12 @@ export interface IPosition {
   toString(): string;
 }
 
-export class TextFilePosition implements IPosition {
+export class TextPosition implements IPosition {
   readonly name: string;
   readonly line: number;
-  readonly col?: number;
+  readonly col: number;
 
-  constructor (name: string, line: number, col?: number) {
+  constructor (name: string, line: number, col: number) {
     this.name = name;
     this.line = line;
     this.col = col;

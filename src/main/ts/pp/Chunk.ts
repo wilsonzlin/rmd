@@ -1,16 +1,33 @@
-import {Container, ContainerType} from "./Container";
-import {Leaf, LeafType} from "./Leaf";
+import {Container} from "./Container";
+import {Leaf} from "./Leaf";
 import {Scanner} from "../util/Scanner";
-import {TextFilePosition} from "../util/IPosition";
+import {TextPosition} from "../util/Position";
 
 export type Chunk = Container | Leaf;
 
-export class Chunks extends Scanner<Chunk, undefined, TextFilePosition> {
-  constructor (source: (Container | Leaf)[]) {
-    super(undefined, source);
+export class Chunks extends Scanner<Chunk, TextPosition> {
+  private readonly source: Chunk[];
+  private next: number;
+
+  constructor (source: Chunk[]) {
+    super();
+    this.source = source;
+    this.next = 0;
   }
 
-  nextPosition (): TextFilePosition {
+  nextPosition (): TextPosition {
     return this.peek().position;
+  }
+
+  protected hasRemaining (amount: number): boolean {
+    return this.next + amount <= this.source.length;
+  }
+
+  protected incrementNext (): void {
+    this.next++;
+  }
+
+  peekOffsetEOD (offset: number): Container | Leaf | null {
+    return this.source[this.next + offset] || null;
   }
 }

@@ -1,12 +1,7 @@
 import {preprocess} from "./pp/Preprocessor";
-import * as fs from "fs";
-import {Section} from "./parse/Section";
 import {Chunks} from "./pp/Chunk";
+import {Document, parseDocument} from "./parse/Document";
 
-const fileName = process.argv[1];
-
-const chunks = new Chunks(preprocess(fileName, fs.readFileSync(fileName, "utf8")).contents);
-
-const document: Section = {
-  contents: [],
+export const parse = (name: string, text: string): Document => {
+  return parseDocument(new Chunks(preprocess(name, text).contents));
 };

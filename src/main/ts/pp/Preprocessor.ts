@@ -1,19 +1,54 @@
 import {SourceError} from "../err/SourceError";
-import {beginsWith, trimRight} from "../util/String";
+import {beginsWith, countCharRepetitionsAt, matchesAt, trimRight} from "../util/String";
 import {Leaf, LeafType} from "./Leaf";
 import {Container, ContainerType} from "./Container";
-import {TextFilePosition} from "../util/IPosition";
+import {TextPosition} from "../util/Position";
 
 export const preprocess = (name: string, code: string): Container => {
   const lines = code.split(/\r\n|\r|\n/).map(l => trimRight(l));
 
-  const root = new Container({name: name, line: 1}, "DOCUMENT", null, "");
+  const root = new Container({name: name, line: 1, col: 0}, "DOCUMENT", null, "");
   let currentLevel: Container = root;
   let currentGroup: Leaf | null = null;
   let currentCodeBlockDelimiter: string | null = null;
 
-  for (let [lineIdx, line] of lines.entries()) {
-    const humanLineNo = lineIdx + 1;
+  for (const [lineIdx, line] of lines.entries()) {
+    const position = (): TextPosition => {
+      return new TextPosition(name, lineIdx + 1, colIdx + 1);
+    };
+
+    const lineAfterCol = (): string => {
+      return line.slice(colIdx);
+    };
+
+    const append = (type: LeafType): void => {
+      if (currentGroup == null || currentGroup.type != type) {
+        currentLevel.add(currentGroup = new Leaf(position(), type));
+      }
+      currentGroup.add(lineAfterCol());
+    };
+
+    const singleton = (type: LeafType): void => {
+      currentLevel.add(new Leaf(position(), type).add(lineAfterCol()));
+      currentGroup = null;
+    };
+
+    const indent = (type: ContainerType, indentation: string): void => {
+      currentLevel = new Container(position(), type, currentLevel, indentation);
+      currentLevel.parent!.add(currentLevel);
+      currentGroup = null;
+    };
+
+    const error = (msg: string): SourceError => {
+      return new SourceError(msg, position());
+    };
+
+    // It's possible for multiple levels to have the same blankPrefix. However, the highest
+    // should be chosen, as it's possible to dedent but not indent.
+    while (!beginsWith(line, currentLevel.indentation) && line != currentLevel.blankPrefix) {
+      // This loop always ends as root has zero length indentation, which always matches.
+      currentLevel = currentLevel.parent!;
+    }
 
     // This works because lines have been right-trimmed.
     if (line == currentLevel.blankPrefix) {
@@ -27,19 +62,14 @@ export const preprocess = (name: string, code: string): Container => {
       continue;
     }
 
-    while (!beginsWith(line, currentLevel.indentation)) {
-      // This loop always ends as root has zero length indentation, which always matches.
-      currentLevel = currentLevel.parent!;
-    }
-
     // Remove indentation.
-    line = line.slice(currentLevel.indentation.length);
+    let colIdx = currentLevel.indentation.length;
 
     // Currently in code block.
     if (currentCodeBlockDelimiter != null) {
       // Treat line literally after removing indentation.
-      currentGroup!.add(line);
-      if (line == currentCodeBlockDelimiter) {
+      currentGroup!.add(lineAfterCol());
+      if (matchesAt(line, colIdx, currentCodeBlockDelimiter)) {
         // End of code block.
         currentCodeBlockDelimiter = null;
         currentGroup = null;
@@ -47,49 +77,27 @@ export const preprocess = (name: string, code: string): Container => {
       continue;
     }
 
-    const append = (type: LeafType, line: string): void => {
-      if (currentGroup == null || currentGroup.type != type) {
-        currentLevel.add(currentGroup = new Leaf({name: name, line: humanLineNo}, type));
-      }
-      currentGroup.add(line);
-    };
-
-    const singleton = (type: LeafType, line: string): void => {
-      currentLevel.add(new Leaf({name: name, line: humanLineNo}, type).add(line));
-      currentGroup = null;
-    };
-
-    const indent = (type: ContainerType, indentation: string): void => {
-      currentLevel = new Container({name: name, line: humanLineNo}, type, currentLevel, indentation);
-      currentLevel.parent!.add(currentLevel);
-      currentGroup = null;
-    };
-
-    const error = (msg: string): SourceError => {
-      return new SourceError(msg, new TextFilePosition(name, humanLineNo));
-    };
-
     // Check if need to start new level (e.g. starting a new list, quote, or definition).
-    switch (line[0]) {
+    switch (line[colIdx]) {
     case "'":
     case "-":
       // List item.
-      if (line[1] != " ") {
+      if (line[colIdx + 1] != " ") {
         throw error("List item must have space after `'` or `-`");
       }
-      line = line.slice(2);
       // List items require exactly two additional spaces for continuation lines indentation.
-      indent(line[0] == "'" ? "ORDERED_LIST_ITEM" : "UNORDERED_LIST_ITEM",
+      indent(line[colIdx] == "'" ? "ORDERED_LIST_ITEM" : "UNORDERED_LIST_ITEM",
         `${currentLevel.indentation}  `);
+      colIdx += 2;
       break;
 
     case ">":
       // Quote.
-      if (line[1] != " ") {
+      if (line[colIdx + 1] != " ") {
         throw error("Quote lines must have space after `>`");
       }
-      line = line.slice(2);
       indent("QUOTE", `${currentLevel.indentation}> `);
+      colIdx += 2;
       break;
 
     case "(":
@@ -108,42 +116,42 @@ export const preprocess = (name: string, code: string): Container => {
     }
 
     // Process line.
-    if (/^\(.+\)$/.test(line)) {
+    if (line[colIdx] == "(") {
       // Definition.
-      singleton("DEFINITION_TITLE", line);
+      singleton("DEFINITION_TITLE");
 
-    } else if (/^{.+}$/.test(line)) {
+    } else if (line[colIdx] == "{") {
       // Configuration.
-      singleton("CONFIGURATION", line);
+      singleton("CONFIGURATION");
 
-    } else if (/^``+/.test(line)) {
+    } else if (matchesAt(line, colIdx, "``")) {
       // Code block.
-      currentCodeBlockDelimiter = /^(`+)/.exec(line)![1];
-      append("CODE_BLOCK", line);
+      currentCodeBlockDelimiter = "`".repeat(countCharRepetitionsAt(line, colIdx, "`"));
+      append("CODE_BLOCK");
 
-    } else if (/^\|/.test(line)) {
+    } else if (line[colIdx] == "|") {
       // Table
-      append("TABLE", line);
+      append("TABLE");
 
-    } else if (/^::+/.test(line)) {
+    } else if (matchesAt(line, colIdx, "::")) {
       // Section.
       // Only allowed at the document level.
       if (!currentLevel.isRoot()) {
         throw error("Sections can only be at the document level");
       }
-      singleton("SECTION_DELIMITER", line);
+      singleton("SECTION_DELIMITER");
 
-    } else if (/^#+/.test(line)) {
+    } else if (line[colIdx] == "#") {
       // Heading.
       // Only allowed at the document level.
       if (!currentLevel.isRoot()) {
         throw error("Headings can only be at the document level");
       }
-      singleton("HEADING", line);
+      singleton("HEADING");
 
     } else {
       // Paragraph.
-      append("PARAGRAPH", line);
+      append("PARAGRAPH");
     }
   }
 

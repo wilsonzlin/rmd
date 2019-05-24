@@ -1,4 +1,4 @@
-import {TextFilePosition} from "../util/IPosition";
+import {TextPosition} from "../util/Position";
 
 export type LeafType =
   "CONFIGURATION"
@@ -10,11 +10,11 @@ export type LeafType =
   | "HEADING";
 
 export class Leaf {
-  readonly position: TextFilePosition;
+  readonly position: TextPosition;
   readonly type: LeafType;
   readonly contents: string[];
 
-  constructor (position: TextFilePosition, type: LeafType) {
+  constructor (position: TextPosition, type: LeafType) {
     this.position = position;
     this.type = type;
     this.contents = [];

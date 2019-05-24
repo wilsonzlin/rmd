@@ -4,9 +4,9 @@ class InternalError extends Error {
   }
 }
 
-export const assert = (assertion: () => boolean): void => {
-  if (!assertion()) {
-    throw new InternalError(`Assertion failed: ${assertion.toString().replace(/^\s*\(\s*\)\s*=>\s*/, "")}`);
+export const assert = (assertion: boolean): void => {
+  if (!assertion) {
+    throw new InternalError(`Assertion failed (refer to stack trace)`);
   }
 };
 

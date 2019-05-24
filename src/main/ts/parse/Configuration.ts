@@ -1,21 +1,17 @@
 import {Block} from "./block/Block";
 import {SourceError} from "../err/SourceError";
 import {Chunks} from "../pp/Chunk";
-import {IPosition} from "../util/IPosition";
-import {Heading} from "./Heading";
-import {Section} from "./Section";
+import {IPosition} from "../util/Position";
 
-export type Configurable = Block | Section | Heading;
-
-export type Parser<S extends Configurable> = (chunks: Chunks) => S;
-export type ParserAcceptingConfiguration<S extends Configurable> = (chunks: Chunks, cfg: Configuration) => S;
+export type Parser<B extends Block> = (chunks: Chunks) => B;
+export type ParserAcceptingConfiguration<B extends Block> = (chunks: Chunks, cfg: Configuration) => B;
 
 export type Configuration = { values: object; position: IPosition; } | null;
-export type ConfigurationSchema<S extends Configurable> = {
-  [key in keyof S]?: (val: any) => val is S[key];
+export type ConfigurationSchema<B extends Block> = {
+  [key in keyof B]?: (val: any) => val is B[key];
 };
 
-export const configurableSyntaxParser = <S extends Configurable> (parser: Parser<S>, cfgSchema: ConfigurationSchema<S>): ParserAcceptingConfiguration<S> => {
+export const configurableSyntaxParser = <B extends Block> (parser: Parser<B>, cfgSchema: ConfigurationSchema<B>): ParserAcceptingConfiguration<B> => {
   return (chunks, cfg) => {
     const result = parser(chunks);
 

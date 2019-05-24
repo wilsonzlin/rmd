@@ -1,111 +1,136 @@
 import {SourceError} from "../err/SourceError";
-import {IPosition} from "./IPosition";
+import {IPosition} from "./Position";
 import {assertReason} from "../err/InternalError";
 
 export interface Predicate<T> {
   (unit: T): boolean;
 }
 
-export abstract class Scanner<T, M, P extends IPosition> {
+/**
+ * A scanner's model of the data is a sequence of units, with each unit having an index.
+ * However, the underlying data might be organised completely differently. For example, the data for code (a sequence of characters) might be:
+ * - a contiguous array in memory
+ * - an array of strings (sequence of lines)
+ * - a continuous stream or window
+ * - inconsistently scrambled or interspersed across a large file
+ * - rows from a database
+ * Units must be comparable directly (using == and !=) and have a string representation.
+ */
+export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U[]> {
   static readonly EOD = null;
 
-  private readonly metadata: M;
-  private readonly source: T[];
-  private next: number;
+  private readonly _collected: U[] = [];
 
-  constructor (metadata: M, source: T[]) {
-    this.metadata = metadata;
-    this.source = source;
-    this.next = 0;
-  }
-
-  private constructSourceError (msg: string): SourceError {
+  constructSourceError (msg: string): SourceError {
     return new SourceError(msg, this.nextPosition());
   }
 
-  private assertNotEOD (str: T | null): T {
+  private assertNotEOD (str: U | null): U {
     if (str == Scanner.EOD) {
       throw this.constructSourceError("Unexpected end of data");
     }
     return str;
   }
 
-  private incrementNext (): void {
-    this.next++;
-  }
+  protected abstract incrementNext (): void;
+
+  protected abstract hasRemaining (amount: number): boolean;
 
   atEnd (): boolean {
-    return this.next >= this.source.length;
+    return !this.hasRemaining(1);
   }
 
   abstract nextPosition (): P;
 
-  peekEOD (): T | null {
-    if (this.next >= this.source.length) {
-      return Scanner.EOD;
-    }
-    return this.source[this.next];
+  collectedMarker (): number {
+    return this._collected.length - 1;
   }
 
-  peek (): T {
+  collected (start?: number, end?: number): U[] {
+    return this._collected.slice(start, end);
+  }
+
+  abstract peekOffsetEOD (offset: number): U | null;
+
+  peekOffset (offset: number): U {
+    return this.assertNotEOD(this.peekOffsetEOD(offset));
+  }
+
+  peekEOD (): U | null {
+    return this.peekOffsetEOD(0);
+  }
+
+  peek (): U {
     return this.assertNotEOD(this.peekEOD());
   }
 
-  accept (): T {
+  accept (): U {
+    const next = this.peek();
+    this.incrementNext();
+    this._collected.push(next);
+    return next;
+  }
+
+  // Not the same as accept, as this doesn't fill collected array.
+  skip (): U {
     const next = this.peek();
     this.incrementNext();
     return next;
   }
 
-  skip (): void {
-    this.incrementNext();
-  }
-
   skipAmount (len: number): number {
-    assertReason(this.next + len > this.source.length, "Skip amount exceeds end of data");
+    assertReason(this.hasRemaining(len), "Skip amount exceeds end of data");
     for (let i = 0; i < len; i++) {
       this.incrementNext();
     }
     return len;
   }
 
-  skipIfMatches (match: T[]): number {
+  skipIf (unit: U): boolean {
+    if (this.peek() == unit) {
+      this.skip();
+      return true;
+    }
+    return false;
+  }
+
+  skipIfMatches (match: S): number {
     return this.skipAmount(this.matches(match));
   }
 
-  skipWhile (pred: Predicate<T>): number {
+  skipWhile (pred: Predicate<U>): number {
     let count = 0;
-    while (this.next < this.source.length && pred(this.source[this.next])) {
-      this.next++;
+    while (!this.atEnd() && pred(this.peek())) {
+      this.incrementNext();
       count++;
     }
     return count;
   }
 
-  skipUntil (pred: Predicate<T>): number {
+  skipUntil (pred: Predicate<U>): number {
     let count = 0;
-    while (this.next < this.source.length && !pred(this.source[this.next])) {
-      this.next++;
+    while (!this.atEnd() && !pred(this.peek())) {
+      this.incrementNext();
       count++;
     }
     return count;
   }
 
-  matchesUnit (char: T): boolean {
-    return this.source[this.next] === char;
+  matchesUnit (unit: U): boolean {
+    return this.peek() === unit;
   }
 
-  matchesPred (pred: Predicate<T>): boolean {
-    return this.next < this.source.length && pred(this.source[this.next]);
+  matchesPred (pred: Predicate<U>): boolean {
+    return pred(this.peek());
   }
 
-  matches (match: T[]): number {
-    if (this.next + match.length > this.source.length) {
+  matches (match: S): number {
+    if (!this.hasRemaining(match.length)) {
       return 0;
     }
 
     for (let i = 0; i < match.length; i++) {
-      if (this.source[this.next + i] != match[i]) {
+      if (this.peekOffsetEOD(i) != match[i]) {
         return 0;
       }
     }
@@ -113,21 +138,21 @@ export abstract class Scanner<T, M, P extends IPosition> {
     return match.length;
   }
 
-  requireChar (char: T): void {
-    if (!this.matchesUnit(char)) {
-      throw this.constructSourceError(`Required \`${char}\``);
+  requireUnit (unit: U): void {
+    if (!this.matchesUnit(unit)) {
+      throw this.constructSourceError(`Required "${unit}", got "${this.peek()}"`);
     }
     this.skip();
   }
 
-  requirePred (pred: Predicate<T>, desc: string): void {
+  requirePred (pred: Predicate<U>, desc: string): U {
     if (!this.matchesPred(pred)) {
       throw this.constructSourceError(`Required syntax not found: ${desc}`);
     }
-    this.skip();
+    return this.accept();
   }
 
-  require (match: T[], desc: string): number {
+  requireSequence (match: S, desc: string): number {
     if (!this.matches(match)) {
       throw this.constructSourceError(`Required syntax not found: ${desc}`);
     }
