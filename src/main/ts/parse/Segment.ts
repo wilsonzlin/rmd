@@ -5,6 +5,8 @@ import {Leaf} from "../pp/Leaf";
 export class Segment extends Scanner<string, TextPosition, string> {
   private readonly name: string;
   private readonly source: string;
+  private readonly indent: number;
+  
   private next: number;
   private line: number;
   private nextCol: number;
@@ -14,20 +16,22 @@ export class Segment extends Scanner<string, TextPosition, string> {
     return new Segment(position.name, leaf.contents, position.line, position.col);
   }
 
-  constructor (name: string, sourceLines: string[], baseLine: number, baseCol: number) {
+  constructor (name: string, sourceLines: string[], baseLine: number, indent: number) {
     super();
     this.name = name;
     this.source = sourceLines.join("\n");
+    this.indent = indent;
+
     this.next = 0;
     this.line = baseLine;
-    this.nextCol = baseCol;
+    this.nextCol = 0;
   }
 
   protected incrementNext (): void {
     // A line starts after the previous line's terminator.
     if (this.source[this.next++] == "\n") {
       this.line++;
-      this.nextCol = 0;
+      this.nextCol = this.indent;
     } else {
       this.nextCol++;
     }
