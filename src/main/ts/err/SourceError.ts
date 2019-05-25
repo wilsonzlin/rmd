@@ -15,11 +15,12 @@ export class SourceError extends Error {
 
 export const parserWithEnhancedErrors = <B extends Block> (parser: ParserAcceptingConfiguration<B>): ParserAcceptingConfiguration<B> => {
   return (chunks, cfg) => {
+    const position = chunks.nextPosition();
     try {
       return parser(chunks, cfg);
     } catch (e) {
       if (e instanceof SourceError) {
-        e.addPosition(chunks.nextPosition());
+        e.addPosition(position);
       }
       throw e;
     }
