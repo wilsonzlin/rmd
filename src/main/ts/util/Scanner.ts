@@ -42,7 +42,7 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
 
   abstract nextPosition (): P;
 
-  collectedMarker (): number {
+  lastCollectedMarker (): number {
     return this._collected.length - 1;
   }
 
@@ -50,7 +50,7 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
     return this._collected.slice(start, end);
   }
 
-  emptyCollected(): this {
+  emptyCollected (): this {
     this._collected.length = 0;
     return this;
   }
@@ -100,7 +100,7 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
   }
 
   skipIfMatches (match: S): number {
-    return this.skipAmount(this.matches(match));
+    return this.skipAmount(this.matchesSequence(match));
   }
 
   skipWhile (pred: Predicate<U>): number {
@@ -129,7 +129,7 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
     return pred(this.peek());
   }
 
-  matches (match: S): number {
+  matchesSequence (match: S): number {
     if (!this.hasRemaining(match.length)) {
       return 0;
     }
@@ -158,12 +158,20 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
   }
 
   requireSequence (match: S, desc: string): number {
-    if (!this.matches(match)) {
+    if (!this.matchesSequence(match)) {
       throw this.constructSourceError(`Required syntax not found: ${desc}`);
     }
     for (let i = 0; i < match.length; i++) {
       this.accept();
     }
+    return match.length;
+  }
+
+  requireSkipSequence (match: S, desc: string): number {
+    if (!this.matchesSequence(match)) {
+      throw this.constructSourceError(`Required syntax not found: ${desc}`);
+    }
+    this.skipAmount(match.length);
     return match.length;
   }
 }

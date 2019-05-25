@@ -57,14 +57,13 @@ const parseCode = (raw: Segment): Markup => {
     delimiter += delimiter[0];
   }
 
-  const start = raw.collectedMarker() + 1;
-  let data = "";
-  while (!raw.matches(delimiter)) {
-    data += raw.accept();
+  const start = raw.lastCollectedMarker() + 1;
+  while (!raw.matchesSequence(delimiter)) {
+    raw.accept();
   }
-  const end = raw.collectedMarker();
+  const end = raw.lastCollectedMarker();
 
-  raw.requireSequence(delimiter, "Inline code delimiter");
+  raw.requireSkipSequence(delimiter, "Inline code delimiter");
 
   return new Markup("CODE", start, end);
 };
@@ -157,13 +156,13 @@ export const parseRichText = (raw: Segment, breakChars: string = ""): RichText =
     if (formattingMarkup != null) {
       if (formattingStack.lastType() == formattingMarkup.value) {
         const last = formattingStack.pop();
-        markup.push(new Markup(last.type, last.start, raw.collectedMarker()));
+        markup.push(new Markup(last.type, last.start, raw.lastCollectedMarker()));
 
       } else if (formattingStack.hasType(formattingMarkup.value)) {
         throw raw.constructSourceError("Can't nest or overlap formatting of the same type");
 
       } else {
-        formattingStack.push(formattingMarkup.value, raw.collectedMarker() + 1);
+        formattingStack.push(formattingMarkup.value, raw.lastCollectedMarker() + 1);
       }
 
       raw.skipAmount(formattingMarkup.length);
