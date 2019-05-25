@@ -27,52 +27,52 @@ export class HTMLRenderer extends rmd.Renderer {
     return this;
   }
 
-  renderCodeBlock (lang: string | null, data: string): string {
+  renderBlocks (renderedBlocks: string[]): string {
+    return renderedBlocks.join("");
+  }
+
+  renderCodeBlock (lang: string | null, rawData: string): string {
     if (lang != null) {
       const handler = this.languageHandlers.get(lang);
       if (handler) {
-        return handler(this, data);
+        return handler(this, rawData);
       }
 
       if (hljs.getLanguage(lang)) {
-        return `<pre>${hljs.highlight(lang, data, true).value}</pre>`;
+        return `<pre>${hljs.highlight(lang, rawData, true).value}</pre>`;
       }
     }
 
-    return `<pre>${data}</pre>`;
+    return `<pre>${rawData}</pre>`;
   }
 
-  renderDefinition (title: string, contents: string): string {
-    return `<dt>${title}</dt><dd>${contents}</dd>`;
+  renderDefinition (renderedTitle: string, renderedContents: string): string {
+    return `<dt>${renderedTitle}</dt><dd>${renderedContents}</dd>`;
   }
 
-  renderBlocks (blocks: string[]): string {
-    return blocks.join("");
+  renderDictionary (renderedDefinitions: string[]): string {
+    return `<dl>${renderedDefinitions.join("")}</dl>`;
   }
 
-  renderDictionary (definitions: string[]): string {
-    return `<dl>${definitions.join("")}</dl>`;
+  renderHeading (level: number, renderedText: string): string {
+    return `<h${level}>${renderedText}</h${level}>`;
   }
 
-  renderHeading (level: number, text: string): string {
-    return `<h${level}>${text}</h${level}>`;
+  renderListItem (renderedContents: string): string {
+    return `<li>${renderedContents}</li>`;
   }
 
-  renderListItem (contents: string): string {
-    return `<li>${contents}</li>`;
-  }
-
-  renderList (mode: rmd.Mode, items: string[]): string {
+  renderList (mode: rmd.Mode, renderedItems: string[]): string {
     const tag = mode == rmd.Mode.ORDERED ? "ol" : "ul";
-    return `<${tag}>${items.join("")}</${tag}>`;
+    return `<${tag}>${renderedItems.join("")}</${tag}>`;
   }
 
-  renderParagraph (text: string): string {
-    return `<p>${text}</p>`;
+  renderParagraph (renderedText: string): string {
+    return `<p>${renderedText}</p>`;
   }
 
-  renderQuote (contents: string): string {
-    return `<blockquote>${contents}</blockquote>`;
+  renderQuote (renderedContents: string): string {
+    return `<blockquote>${renderedContents}</blockquote>`;
   }
 
   renderRichText (raw: string, markup: rmd.Markup[]): string {
@@ -88,24 +88,24 @@ export class HTMLRenderer extends rmd.Renderer {
     return encoder.encode(raw);
   }
 
-  renderSection (type: string, cfg: rmd.Configuration, contents: rmd.Block[]): string {
+  renderSection (type: string, cfg: rmd.Configuration, rawContents: rmd.Block[]): string {
     const handler = this.sectionHandlers.get(type);
     if (!handler) {
       throw new TypeError(`No handler for section type "${type}" provided`);
     }
-    return handler(this, cfg, contents);
+    return handler(this, cfg, rawContents);
   }
 
-  renderRow (cells: string[], heading: boolean): string {
-    return `<tr>${cells.join("")}</tr>`;
+  renderRow (renderedCells: string[], _heading: boolean): string {
+    return `<tr>${renderedCells.join("")}</tr>`;
   }
 
-  renderCell (text: string, heading: boolean): string {
+  renderCell (renderedText: string, heading: boolean): string {
     const tag = heading ? "th" : "td";
-    return `<${tag}>${text}</${tag}>`;
+    return `<${tag}>${renderedText}</${tag}>`;
   }
 
-  renderTable (headings: string[], body: string[]): string {
-    return `<table><thead>${headings.join("")}<tbody>${body.join("")}</table>`;
+  renderTable (renderedHead: string[], renderedBody: string[]): string {
+    return `<table><thead>${renderedHead.join("")}<tbody>${renderedBody.join("")}</table>`;
   }
 }
