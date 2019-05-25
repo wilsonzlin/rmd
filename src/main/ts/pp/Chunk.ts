@@ -16,6 +16,9 @@ export class Chunks extends Scanner<Chunk, TextPosition> {
   }
 
   nextPosition (): TextPosition {
+    if (this.atEnd()) {
+      return new TextPosition(this.source[0].position.name, -1, 0);
+    }
     return this.peek().position;
   }
 
