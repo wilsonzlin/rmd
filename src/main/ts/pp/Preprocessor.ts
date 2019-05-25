@@ -1,125 +1,332 @@
 import {SourceError} from "../err/SourceError";
-import {beginsWith, countCharRepetitionsAt, matchesAt, trimRight} from "../util/String";
+import {beginsWith, countCharRepetitionsAt, trimRight} from "../util/String";
 import {Leaf, LeafType} from "./Leaf";
 import {Container, ContainerType} from "./Container";
 import {TextPosition} from "../util/Position";
+import {assert} from "../err/InternalError";
+
+class LinesProcessor {
+  readonly name: string;
+  private readonly lines: string[];
+  readonly root: Container;
+
+  private current: number;
+  private working: string;
+  private leftRemovedAmount: number;
+
+  private currentContainer: Container;
+  private currentLeaf: Leaf | null;
+
+  constructor (name: string, lines: string[]) {
+    this.name = name;
+    this.lines = lines;
+    this.root = new Container({name: name, line: 1, col: 0}, "DOCUMENT", null, "");
+
+    this.currentContainer = this.root;
+    this.currentLeaf = null;
+
+    this.current = -1;
+    this.working = "";
+    this.leftRemovedAmount = 0;
+  }
+
+  /**
+   * Has remaining lines.
+   */
+  hasNext (): boolean {
+    return this.current < this.lines.length;
+  }
+
+  /**
+   * Work on the next line.
+   */
+  next (): boolean {
+    if (!this.hasNext()) {
+      return false;
+    }
+    this.current++;
+    this.working = this.lines[this.current];
+    this.leftRemovedAmount = 0;
+    return true;
+  }
+
+  /**
+   * Current container is the document/root/topmost-level.
+   */
+  currentlyDocument (): boolean {
+    return this.currentContainer.isRoot();
+  }
+
+  /**
+   * Get the first character of the current line.
+   */
+  firstChar (): string {
+    return this.working[0];
+  }
+
+  /**
+   * Get the second character of the current line.
+   */
+  secondChar (): string {
+    return this.working[1];
+  }
+
+  /**
+   * Get the last character of the current line.
+   */
+  lastChar (): string {
+    return this.working[this.working.length - 1];
+  }
+
+  /**
+   * Check if the current line begins with {@param query}.
+   */
+  beginsWith (query: string): boolean {
+    return beginsWith(this.working, query);
+  }
+
+  /**
+   * Check if the current line begins with the current container's indentation.
+   */
+  beginsWithIndentation (): boolean {
+    return this.beginsWith(this.currentIndentation());
+  }
+
+  /**
+   * Check how many {@param char} characters appear at the beginning of the current line.
+   */
+  beginningRepetitionsOf (char: string): number {
+    return countCharRepetitionsAt(this.working, 0, char);
+  }
+
+  /**
+   * Check if the current line equals {@param query}.
+   */
+  equals (query: string): boolean {
+    return this.working == query;
+  }
+
+  /**
+   * Check if the current line equals the current container's blank prefix.
+   */
+  equalsBlankPrefix (): boolean {
+    return this.beginsWith(this.currentBlankPrefix());
+  }
+
+  /**
+   * Get the current container's indentation.
+   */
+  currentIndentation (): string {
+    return this.currentContainer.indentation;
+  }
+
+  /**
+   * Get the current container's blank prefix.
+   */
+  currentBlankPrefix (): string {
+    return this.currentContainer.blankPrefix;
+  }
+
+  /**
+   * Leave the current container for its parent.
+   */
+  goToParentContainer (): this {
+    this.currentContainer = this.currentContainer.parent!;
+    assert(!!this.currentContainer);
+    return this;
+  }
+
+  /**
+   * Remove the first {@param amount} characters from the current line.
+   */
+  removeLeft (amount: number): this {
+    this.working = this.working.slice(amount);
+    this.leftRemovedAmount += amount;
+    return this;
+  }
+
+  /**
+   * Remove {@link currentIndentation} amount of characters from the beginning of the current line.
+   */
+  removeIndentation (): this {
+    this.removeLeft(this.currentIndentation().length);
+    return this;
+  }
+
+  /**
+   * Remove the last {@param amount} characters from the current line.
+   */
+  removeRight (amount: number): this {
+    this.working = this.working.slice(0, -amount);
+    return this;
+  }
+
+  /**
+   * Get a position representing the current source name, line, and column.
+   * The column represents the amount of characters removed from the left of the line.
+   * The line and column values are 1-based.
+   */
+  position (): TextPosition {
+    return new TextPosition(this.name, this.current + 1, this.leftRemovedAmount + 1);
+  }
+
+  /**
+   * Start a new leaf.
+   */
+  startLeaf (type: LeafType, ...metadata: [string, any][]): void {
+    this.currentLeaf = new Leaf(this.position(), type).setMetadataPairs(...metadata);
+    this.currentContainer.add(this.currentLeaf);
+  }
+
+  /**
+   * End the current leaf.
+   */
+  endLeaf (): void {
+    this.currentLeaf = null;
+  }
+
+  /**
+   * Append the current line to the current leaf, starting a new leaf if it's not of type {@param type}.
+   */
+  startOrAppendLeaf (type: LeafType, ...metadata: [string, any][]): void {
+    if (this.currentLeaf == null || this.currentLeaf.type != type) {
+      this.startLeaf(type, ...metadata);
+    }
+    // start function always sets currentGroup.
+    this.currentLeaf!.add(this.working);
+  }
+
+  /**
+   * Starts a new leaf, append the current line to it, and then ends the leaf.
+   * No leaf will be active immediately afterwards.
+   */
+  singletonLeaf (type: LeafType, ...metadata: [string, any][]): void {
+    this.currentContainer.add(
+      new Leaf(this.position(), type)
+        .add(this.working)
+        .setMetadataPairs(...metadata)
+    );
+    this.currentLeaf = null;
+  }
+
+  /**
+   * Starts a new container, ending any current leaf.
+   */
+  newContainer (type: ContainerType, indentation: string): void {
+    this.currentContainer = new Container(this.position(), type, this.currentContainer, indentation);
+    this.currentContainer.parent!.add(this.currentContainer);
+    this.currentLeaf = null;
+  }
+
+  /**
+   * Construct a {@type SourceError} with the current position.
+   */
+  error (msg: string): SourceError {
+    return new SourceError(msg, this.position());
+  }
+
+  /**
+   * Get the current line.
+   */
+  get (): string {
+    return this.working;
+  }
+
+  /**
+   * Match the current line against {@param regex}.
+   */
+  regexMatches (regex: RegExp): RegExpExecArray | null {
+    return regex.exec(this.working);
+  }
+
+  /**
+   * Append a custom line to the current leaf.
+   */
+  appendLeafCustom (line: string): this {
+    assert(!!this.currentLeaf);
+    this.currentLeaf!.add(line);
+    return this;
+  }
+
+  /**
+   * Append the current line to the current leaf.
+   */
+  appendLeaf (): this {
+    return this.appendLeafCustom(this.working);
+  }
+}
 
 export const preprocess = (name: string, code: string): Container => {
-  const lines = code.split(/\r\n|\r|\n/).map(l => trimRight(l));
+  const lines = new LinesProcessor(name, code.split(/\r\n|\r|\n/).map(l => trimRight(l)));
 
-  const root = new Container({name: name, line: 1, col: 0}, "DOCUMENT", null, "");
-  let currentLevel: Container = root;
-  let currentGroup: Leaf | null = null;
   let currentCodeBlockDelimiter: string | null = null;
 
-  for (const [lineIdx, line] of lines.entries()) {
-    const position = (): TextPosition => {
-      return new TextPosition(name, lineIdx + 1, colIdx + 1);
-    };
-
-    const lineAfterCol = (): string => {
-      return line.slice(colIdx, line.length - rightTrimAmount);
-    };
-
-    const start = (type: LeafType, ...metadata: [string, any][]): void => {
-      currentGroup = new Leaf(position(), type).setMetadataPairs(...metadata);
-      currentLevel.add(currentGroup);
-    };
-
-    const append = (type: LeafType, ...metadata: [string, any][]): void => {
-      if (currentGroup == null || currentGroup.type != type) {
-        start(type, ...metadata);
-      }
-      // start function always sets currentGroup.
-      currentGroup!.add(lineAfterCol());
-    };
-
-    const singleton = (type: LeafType, ...metadata: [string, any][]): void => {
-      currentLevel.add(
-        new Leaf(position(), type)
-          .add(lineAfterCol())
-          .setMetadataPairs(...metadata)
-      );
-      currentGroup = null;
-    };
-
-    const indent = (type: ContainerType, indentation: string): void => {
-      currentLevel = new Container(position(), type, currentLevel, indentation);
-      currentLevel.parent!.add(currentLevel);
-      currentGroup = null;
-    };
-
-    const error = (msg: string): SourceError => {
-      return new SourceError(msg, position());
-    };
-
+  while (lines.next()) {
     // It's possible for multiple levels to have the same blankPrefix. However, the highest
     // should be chosen, as it's possible to dedent but not indent.
-    while (!beginsWith(line, currentLevel.indentation) && line != currentLevel.blankPrefix) {
+    while (!lines.beginsWithIndentation() && !lines.equalsBlankPrefix()) {
       // This loop always ends as root has zero length indentation, which always matches.
-      currentLevel = currentLevel.parent!;
+      lines.goToParentContainer();
     }
 
     // This works because lines have been right-trimmed.
-    if (line == currentLevel.blankPrefix) {
+    if (lines.equalsBlankPrefix()) {
       // Line break for formatting purposes; ignore.
       if (currentCodeBlockDelimiter != null) {
         // Currently in code block, so add blank line.
-        currentGroup!.add("");
+        lines.appendLeafCustom("");
       } else {
-        currentGroup = null;
+        lines.endLeaf();
       }
       continue;
     }
 
-    // Remove indentation.
-    let colIdx = currentLevel.indentation.length;
-    // Amount of characters to remove from end of line.
-    let rightTrimAmount = 0;
+    lines.removeIndentation();
 
     // Currently in code block.
     if (currentCodeBlockDelimiter != null) {
       // Treat line literally after removing indentation.
-      const subline = lineAfterCol();
       // This is not the same as matchesAt, as the entire string (after indentation) needs to match, not just a substring.
-      if (subline == currentCodeBlockDelimiter) {
+      if (lines.equals(currentCodeBlockDelimiter)) {
         // End of code block.
         currentCodeBlockDelimiter = null;
-        currentGroup = null;
+        lines.endLeaf();
       } else {
-        currentGroup!.add(subline);
+        lines.appendLeaf();
       }
       continue;
     }
 
     // Check if need to start new level (e.g. starting a new list, quote, or definition).
-    switch (line[colIdx]) {
+    switch (lines.firstChar()) {
     case "'":
     case "-":
       // List item.
-      if (line[colIdx + 1] != " ") {
-        throw error("List item must have space after `'` or `-`");
+      if (lines.secondChar() != " ") {
+        throw lines.error("List item must have space after `'` or `-`");
       }
       // List items require exactly two additional spaces for continuation lines indentation.
-      indent(line[colIdx] == "'" ? "ORDERED_LIST_ITEM" : "UNORDERED_LIST_ITEM",
-        `${currentLevel.indentation}  `);
-      colIdx += 2;
+      lines.newContainer(
+        lines.firstChar() == "'" ? "ORDERED_LIST_ITEM" : "UNORDERED_LIST_ITEM",
+        `${lines.currentIndentation()}  `
+      );
+      lines.removeLeft(2);
       break;
 
     case ">":
       // Quote.
-      if (line[colIdx + 1] != " ") {
-        throw error("Quote lines must have space after `>`");
+      if (lines.secondChar() != " ") {
+        throw lines.error("Quote lines must have space after `>`");
       }
-      indent("QUOTE", `${currentLevel.indentation}> `);
-      colIdx += 2;
+      lines.newContainer("QUOTE", `${lines.currentIndentation()}> `);
+      lines.removeLeft(2);
       break;
 
     case "(":
       // Definition.
       // Definition title verification and unwrapping will be done by line processing later.
       // Definition list definitions require exactly two additional spaces for continuation lines indentation.
-      indent("DEFINITION", `${currentLevel.indentation}  `);
+      lines.newContainer("DEFINITION", `${lines.currentIndentation()}  `);
       break;
 
     case " ":
@@ -127,63 +334,64 @@ export const preprocess = (name: string, code: string): Container => {
     case "\f":
     case "\v":
       // Line cannot start with whitespace.
-      throw error("Line cannot start with whitespace after indentation");
+      throw lines.error("Line cannot start with whitespace after indentation");
     }
 
     // Process line.
-    if (line[colIdx] == "(") {
+    if (lines.firstChar() == "(") {
       // Definition.
-      if (line[line.length - 1] != ")") {
-        throw error("Definition titles must be a single line ending with a right parenthesis");
+      if (lines.lastChar() != ")") {
+        throw lines.error("Definition titles must be a single line ending with a right parenthesis");
       }
-      colIdx++;
-      rightTrimAmount++;
-      singleton("DEFINITION_TITLE");
+      lines.removeLeft(1);
+      lines.removeRight(1);
+      lines.singletonLeaf("DEFINITION_TITLE");
 
-    } else if (line[colIdx] == "{") {
+    } else if (lines.firstChar() == "{") {
       // Configuration.
-      singleton("CONFIGURATION");
+      lines.singletonLeaf("CONFIGURATION");
 
-    } else if (matchesAt(line, colIdx, "``")) {
+    } else if (lines.beginsWith("``")) {
       // Code block.
-      currentCodeBlockDelimiter = "`".repeat(countCharRepetitionsAt(line, colIdx, "`"));
-      const lang = line.slice(colIdx + currentCodeBlockDelimiter.length).trim();
-      start("CODE_BLOCK", ["lang", lang]);
+      currentCodeBlockDelimiter = "`".repeat(lines.beginningRepetitionsOf("`"));
+      const lang = lines.removeLeft(currentCodeBlockDelimiter.length).get().trim();
+      lines.startLeaf("CODE_BLOCK", ["lang", lang]);
 
-    } else if (line[colIdx] == "|") {
+    } else if (lines.firstChar() == "|") {
       // Table
-      append("TABLE");
+      lines.startOrAppendLeaf("TABLE");
 
-    } else if (matchesAt(line, colIdx, "::")) {
+    } else if (lines.beginsWith("::")) {
       // Section.
       // Only allowed at the document level.
-      if (!currentLevel.isRoot()) {
-        throw error("Sections can only be at the document level");
+      if (!lines.currentlyDocument()) {
+        throw lines.error("Sections can only be at the document level");
       }
-      const matches = /^(:+) (begin|end) (.*)$/.exec(lineAfterCol());
+      const matches = lines.regexMatches(/^(:+) (begin|end) (.*)$/);
       if (!matches) {
-        throw error("Invalid section delimiter");
+        throw lines.error("Invalid section delimiter");
       }
-      singleton(
+      lines.singletonLeaf(
         "SECTION_DELIMITER",
         ["level", matches[1].length],
         ["mode", matches[2].toUpperCase()],
         ["type", matches[3].trim()]
       );
 
-    } else if (line[colIdx] == "#") {
+    } else if (lines.firstChar() == "#") {
       // Heading.
       // Only allowed at the document level.
-      if (!currentLevel.isRoot()) {
-        throw error("Headings can only be at the document level");
+      if (!lines.currentlyDocument()) {
+        throw lines.error("Headings can only be at the document level");
       }
-      singleton("HEADING");
+      lines.singletonLeaf("HEADING");
 
     } else {
       // Paragraph.
-      append("PARAGRAPH");
+      lines.startOrAppendLeaf("PARAGRAPH");
     }
   }
 
-  return root;
+  return lines.root;
 };
+
