@@ -1,48 +1,45 @@
 import {Segment} from "../Segment";
 import {assert} from "../../err/InternalError";
 
+export type LinkMarkupType =
+  "LINK_HEADING"
+  | "LINK_ANCHOR"
+  | "LINK_FOOTNOTE"
+  | "LINK_ARTICLE"
+  | "LINK_EMAIL"
+  | "LINK_EXTERNAL";
+
 export type MarkupType =
   "STRONG" |
   "EMPHASIS" |
   "STRIKETHROUGH" |
   "UNDERLINE" |
-
   "CODE" |
+  LinkMarkupType;
 
-  "LINK_HEADING" |
-  "LINK_ANCHOR" |
-  "LINK_FOOTNOTE" |
-  "LINK_ARTICLE" |
-  "LINK_EMAIL" |
-  "LINK_EXTERNAL";
-
-const FORMATTING_MARKUP = new Set([
-  "STRONG",
-  "EMPHASIS",
-  "STRIKETHROUGH",
-  "UNDERLINE",
-]);
-const DATA_MARKUP = new Set([
-  "CODE",
-  "LINK_HEADING",
-  "LINK_ANCHOR",
-  "LINK_FOOTNOTE",
-  "LINK_ARTICLE",
-  "LINK_EMAIL",
-  "LINK_EXTERNAL",
-]);
-
-export interface Markup {
-  type: MarkupType,
+export class Markup {
+  type: MarkupType;
   start: number;
   end: number;
+
+  constructor (type: MarkupType, start: number, end: number) {
+    this.type = type;
+    this.start = start;
+    this.end = end;
+  }
 }
 
-export interface LinkMarkup extends Markup {
-  type: "LINK_HEADING" | "LINK_ANCHOR" | "LINK_FOOTNOTE" | "LINK_ARTICLE" | "LINK_EMAIL" | "LINK_EXTERNAL";
+export class LinkMarkup extends Markup {
   target: string;
   tip: string | null;
   label: string | null;
+
+  constructor (type: LinkMarkupType, start: number, end: number, target: string, tip: string | null, label: string | null) {
+    super(type, start, end);
+    this.target = target;
+    this.tip = tip;
+    this.label = label;
+  }
 }
 
 export type RichText = {
@@ -52,28 +49,25 @@ export type RichText = {
 
 const CODE_DELIMITERS = new Set(["^", "`"]);
 
-function parseCode (raw: Segment): Markup {
-  let delim = raw.skip();
-  assert(CODE_DELIMITERS.has(delim));
+const parseCode = (raw: Segment): Markup => {
+  let delimiter = raw.skip();
+  assert(CODE_DELIMITERS.has(delimiter));
 
-  while (raw.skipIf(delim[0])) {
-    delim += delim[0];
+  while (raw.skipIf(delimiter[0])) {
+    delimiter += delimiter[0];
   }
 
   const start = raw.collectedMarker() + 1;
   let data = "";
-  while (!raw.matches(delim)) {
+  while (!raw.matches(delimiter)) {
     data += raw.accept();
   }
   const end = raw.collectedMarker();
 
-  raw.requireSequence(delim, "Inline code delimiter");
+  raw.requireSequence(delimiter, "Inline code delimiter");
 
-  return {
-    type: "CODE",
-    start, end,
-  };
-}
+  return new Markup("CODE", start, end);
+};
 
 type TrieMatch = {
   value: MarkupType;
@@ -148,20 +142,22 @@ class FormattingStack {
   }
 }
 
-export const parseRichText = (raw: Segment): RichText => {
+export const parseRichText = (raw: Segment, breakChars: string = ""): RichText => {
   const markup: Markup[] = [];
 
   const formattingStack = new FormattingStack();
   while (!raw.atEnd()) {
     const next = raw.peek();
 
+    if (breakChars.indexOf(next) > -1) {
+      break;
+    }
+
     const formattingMarkup = FORMATTING_TRIE.longestMatch(raw);
     if (formattingMarkup != null) {
       if (formattingStack.lastType() == formattingMarkup.value) {
-        markup.push({
-          ...formattingStack.pop(),
-          end: raw.collectedMarker(),
-        });
+        const last = formattingStack.pop();
+        markup.push(new Markup(last.type, last.start, raw.collectedMarker()));
 
       } else if (formattingStack.hasType(formattingMarkup.value)) {
         throw raw.constructSourceError("Can't nest or overlap formatting of the same type");

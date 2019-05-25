@@ -46,8 +46,20 @@ export const parseBlocks = (chunks: Chunks): Block[] => {
       chunks.skip();
       assert(next.contents.length == 1);
 
+      // Already asserted that length == 1.
+      const rawJson = next.contents[0];
+      assert(rawJson[0] == "{");
+
+      // Since configurations start with a brace, the parsed result must be an object.
+      let parsed: object;
+      try {
+        parsed = JSON.parse(rawJson);
+      } catch (err) {
+        throw new SourceError(`Configuration is malformed: ${err.message}`, next.position);
+      }
+
       cfg = {
-        values: JSON.parse(next.contents[0]),
+        values: parsed,
         position: next.position,
       };
 

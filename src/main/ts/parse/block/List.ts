@@ -4,6 +4,7 @@ import {Chunks} from "../../pp/Chunk";
 import {Container} from "../../pp/Container";
 import {TextPosition} from "../../util/Position";
 import {parseBlocks} from "./Blocks";
+import {assert} from "../../err/InternalError";
 
 export enum Mode {
   ORDERED, UNORDERED
@@ -27,21 +28,24 @@ export class List extends Block {
 const commonListConfigurationSchema = {};
 
 const parseList = (chunks: Chunks, mode: Mode) => {
-  // TODO Validation
   const position = chunks.nextPosition();
+
   const chunkType = chunks.peek().type;
+  assert(chunkType == "UNORDERED_LIST_ITEM" || chunkType == "ORDERED_LIST_ITEM");
+
   const items: ListItem[] = [];
 
-  do {
-    // TODO Validation
+  while (!chunks.atEnd() && chunks.matchesPred(u => u.type == chunkType)) {
     const rawItem = chunks.accept() as Container;
 
-    // TODO Validation
     items.push({
       contents: parseBlocks(new Chunks(rawItem.contents)),
     });
-    // TODO Validation
-  } while (chunks.peek().type == chunkType);
+  }
+
+  // This function should only be called upon visiting a list item,
+  // so there should be at least one item.
+  assert(items.length > 0);
 
   return new List(position, mode, items);
 };

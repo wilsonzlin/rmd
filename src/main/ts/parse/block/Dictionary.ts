@@ -7,6 +7,7 @@ import {Leaf} from "../../pp/Leaf";
 import {TextPosition} from "../../util/Position";
 import {Segment} from "../Segment";
 import {parseBlocks} from "./Blocks";
+import {assert} from "../../err/InternalError";
 
 export type Definition = {
   title: RichText;
@@ -23,31 +24,29 @@ export class Dictionary extends Block {
 }
 
 export const parseDictionary = configurableSyntaxParser(chunks => {
-  // TODO Validate
   const position = chunks.nextPosition();
 
   const definitions: Definition[] = [];
 
-  do {
-    // TODO Validation
+  while (!chunks.atEnd() && chunks.matchesPred(unit => unit.type == "DEFINITION")) {
     const rawDefinition = chunks.accept() as Container;
     const contents = new Chunks(rawDefinition.contents);
 
-    // TODO Validation (including length)
+    assert(contents.matchesPred(unit => unit.type == "DEFINITION_TITLE"));
     const rawTitle = contents.accept() as Leaf;
+    assert(rawTitle.contents.length == 1);
 
     const titleSegment = Segment.fromLeaf(rawTitle);
 
-    titleSegment.requireUnit("(");
-    // TODO Closing parenthesis
-
-    // TODO Validation
     definitions.push({
       title: parseRichText(titleSegment),
       contents: parseBlocks(contents),
     });
-    // TODO Validation
-  } while (chunks.peek().type == "DEFINITION");
+  }
+
+  // This function should only be called upon visiting a definition title,
+  // so there should be at least one definition.
+  assert(definitions.length > 0);
 
   return new Dictionary(position, definitions);
 }, {});

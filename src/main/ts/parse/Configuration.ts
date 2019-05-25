@@ -1,5 +1,5 @@
 import {Block} from "./block/Block";
-import {SourceError} from "../err/SourceError";
+import {SourceError, parserWithEnhancedErrors} from "../err/SourceError";
 import {Chunks} from "../pp/Chunk";
 import {IPosition} from "../util/Position";
 
@@ -8,11 +8,11 @@ export type ParserAcceptingConfiguration<B extends Block> = (chunks: Chunks, cfg
 
 export type Configuration = { values: object; position: IPosition; } | null;
 export type ConfigurationSchema<B extends Block> = {
-  [key in keyof B]?: (val: any) => val is B[key];
+  [key in keyof B]?: (val: any) => boolean;
 };
 
 export const configurableSyntaxParser = <B extends Block> (parser: Parser<B>, cfgSchema: ConfigurationSchema<B>): ParserAcceptingConfiguration<B> => {
-  return (chunks, cfg) => {
+  return parserWithEnhancedErrors((chunks, cfg) => {
     const result = parser(chunks);
 
     if (cfg != null) {
@@ -24,7 +24,7 @@ export const configurableSyntaxParser = <B extends Block> (parser: Parser<B>, cf
           throw new SourceError(`Configuration key "${key}" is not applicable`, cfg.position);
         }
 
-        if (!schema.validator(val)) {
+        if (!schema(val)) {
           throw new SourceError(`Configuration value of key "${key}" is invalid`, cfg.position);
         }
 
@@ -33,5 +33,5 @@ export const configurableSyntaxParser = <B extends Block> (parser: Parser<B>, cf
     }
 
     return result;
-  };
+  });
 };

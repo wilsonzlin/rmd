@@ -2,12 +2,13 @@ import {configurableSyntaxParser} from "../Configuration";
 import {Leaf} from "../../pp/Leaf";
 import {Block} from "./Block";
 import {TextPosition} from "../../util/Position";
+import {assert} from "../../err/InternalError";
 
 export class CodeBlock extends Block {
-  readonly lang: string;
+  readonly lang: string | null;
   readonly data: string;
 
-  constructor (position: TextPosition, lang: string, data: string) {
+  constructor (position: TextPosition, lang: string | null, data: string) {
     super(position);
     this.lang = lang;
     this.data = data;
@@ -15,16 +16,15 @@ export class CodeBlock extends Block {
 }
 
 export const parseCodeBlock = configurableSyntaxParser(chunks => {
-  // TODO Validation
+  assert(chunks.matchesPred(unit => unit.type == "CODE_BLOCK"));
   const rawCodeBlock = chunks.accept() as Leaf;
 
-  // TODO Validation
-  const lang = rawCodeBlock.contents[0].replace(/^`+/, "");
+  const lang = rawCodeBlock.getMetadata("lang");
+  assert(typeof lang == "string");
 
   return new CodeBlock(
     rawCodeBlock.position,
-    lang,
-    // TODO Validation
-    rawCodeBlock.contents.slice(1, -1).join("\n")
+    lang || null,
+    rawCodeBlock.contents.join("\n")
   );
 }, {});

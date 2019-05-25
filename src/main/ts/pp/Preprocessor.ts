@@ -18,18 +18,28 @@ export const preprocess = (name: string, code: string): Container => {
     };
 
     const lineAfterCol = (): string => {
-      return line.slice(colIdx);
+      return line.slice(colIdx, line.length - rightTrimAmount);
     };
 
-    const append = (type: LeafType): void => {
+    const start = (type: LeafType, ...metadata: [string, any][]): void => {
+      currentGroup = new Leaf(position(), type).setMetadataPairs(...metadata);
+      currentLevel.add(currentGroup);
+    };
+
+    const append = (type: LeafType, ...metadata: [string, any][]): void => {
       if (currentGroup == null || currentGroup.type != type) {
-        currentLevel.add(currentGroup = new Leaf(position(), type));
+        start(type, ...metadata);
       }
-      currentGroup.add(lineAfterCol());
+      // start function always sets currentGroup.
+      currentGroup!.add(lineAfterCol());
     };
 
-    const singleton = (type: LeafType): void => {
-      currentLevel.add(new Leaf(position(), type).add(lineAfterCol()));
+    const singleton = (type: LeafType, ...metadata: [string, any][]): void => {
+      currentLevel.add(
+        new Leaf(position(), type)
+          .add(lineAfterCol())
+          .setMetadataPairs(...metadata)
+      );
       currentGroup = null;
     };
 
@@ -64,15 +74,20 @@ export const preprocess = (name: string, code: string): Container => {
 
     // Remove indentation.
     let colIdx = currentLevel.indentation.length;
+    // Amount of characters to remove from end of line.
+    let rightTrimAmount = 0;
 
     // Currently in code block.
     if (currentCodeBlockDelimiter != null) {
       // Treat line literally after removing indentation.
-      currentGroup!.add(lineAfterCol());
-      if (matchesAt(line, colIdx, currentCodeBlockDelimiter)) {
+      const subline = lineAfterCol();
+      // This is not the same as matchesAt, as the entire string (after indentation) needs to match, not just a substring.
+      if (subline == currentCodeBlockDelimiter) {
         // End of code block.
         currentCodeBlockDelimiter = null;
         currentGroup = null;
+      } else {
+        currentGroup!.add(subline);
       }
       continue;
     }
@@ -118,6 +133,11 @@ export const preprocess = (name: string, code: string): Container => {
     // Process line.
     if (line[colIdx] == "(") {
       // Definition.
+      if (line[line.length - 1] != ")") {
+        throw error("Definition titles must be a single line ending with a right parenthesis");
+      }
+      colIdx++;
+      rightTrimAmount++;
       singleton("DEFINITION_TITLE");
 
     } else if (line[colIdx] == "{") {
@@ -127,7 +147,8 @@ export const preprocess = (name: string, code: string): Container => {
     } else if (matchesAt(line, colIdx, "``")) {
       // Code block.
       currentCodeBlockDelimiter = "`".repeat(countCharRepetitionsAt(line, colIdx, "`"));
-      append("CODE_BLOCK");
+      const lang = line.slice(colIdx + currentCodeBlockDelimiter.length).trim();
+      start("CODE_BLOCK", ["lang", lang]);
 
     } else if (line[colIdx] == "|") {
       // Table
@@ -139,7 +160,16 @@ export const preprocess = (name: string, code: string): Container => {
       if (!currentLevel.isRoot()) {
         throw error("Sections can only be at the document level");
       }
-      singleton("SECTION_DELIMITER");
+      const matches = /^(:+) (begin|end) (.*)$/.exec(lineAfterCol());
+      if (!matches) {
+        throw error("Invalid section delimiter");
+      }
+      singleton(
+        "SECTION_DELIMITER",
+        ["level", matches[1].length],
+        ["mode", matches[2].toUpperCase()],
+        ["type", matches[3].trim()]
+      );
 
     } else if (line[colIdx] == "#") {
       // Heading.

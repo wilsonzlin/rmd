@@ -4,6 +4,7 @@ import {Block} from "./Block";
 import {configurableSyntaxParser} from "../Configuration";
 import {TextPosition} from "../../util/Position";
 import {parseBlocks} from "./Blocks";
+import {assert} from "../../err/InternalError";
 
 export class Quote extends Block {
   readonly contents: Block[];
@@ -15,12 +16,11 @@ export class Quote extends Block {
 }
 
 export const parseQuote = configurableSyntaxParser(chunks => {
-  // TODO Validation
+  assert(chunks.matchesPred(unit => unit.type == "QUOTE"));
   const rawQuote = chunks.accept() as Container;
 
   return new Quote(
     rawQuote.position,
-    // TODO Validation
     parseBlocks(new Chunks(rawQuote.contents))
   );
 }, {});

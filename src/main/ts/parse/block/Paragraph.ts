@@ -5,6 +5,7 @@ import {Chunks} from "../../pp/Chunk";
 import {Block} from "./Block";
 import {TextPosition} from "../../util/Position";
 import {Segment} from "../Segment";
+import {assert} from "../../err/InternalError";
 
 export class Paragraph extends Block {
   readonly text: RichText;
@@ -16,7 +17,7 @@ export class Paragraph extends Block {
 }
 
 export const parseParagraph = configurableSyntaxParser((chunks: Chunks): Paragraph => {
-  // TODO Validation
+  assert(chunks.matchesPred(unit => unit.type == "PARAGRAPH"));
   const raw = chunks.accept() as Leaf;
 
   return new Paragraph(raw.position, parseRichText(Segment.fromLeaf(raw)));

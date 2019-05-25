@@ -50,6 +50,11 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
     return this._collected.slice(start, end);
   }
 
+  emptyCollected(): this {
+    this._collected.length = 0;
+    return this;
+  }
+
   abstract peekOffsetEOD (offset: number): U | null;
 
   peekOffset (offset: number): U {
@@ -142,7 +147,7 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
     if (!this.matchesUnit(unit)) {
       throw this.constructSourceError(`Required "${unit}", got "${this.peek()}"`);
     }
-    this.skip();
+    this.accept();
   }
 
   requirePred (pred: Predicate<U>, desc: string): U {
@@ -156,7 +161,9 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
     if (!this.matches(match)) {
       throw this.constructSourceError(`Required syntax not found: ${desc}`);
     }
-    this.skipAmount(match.length);
+    for (let i = 0; i < match.length; i++) {
+      this.accept();
+    }
     return match.length;
   }
 }
