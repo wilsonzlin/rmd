@@ -33,7 +33,9 @@
     "url": "https://github.com/wilsonzlin/rmd-parse/issues"
   },
   "homepage": "https://github.com/wilsonzlin/rmd-parse#readme",
-  "dependencies": {},
+  "dependencies": {
+    "package": "^1.0.1"
+  },
   "devDependencies": {
     "chai": "^4.1.2",
     "@types/chai": "^4.1.3",

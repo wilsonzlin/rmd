@@ -1,6 +1,10 @@
+const pkg = require("package");
+
+const thisPackage = pkg(module);
+
 class InternalError extends Error {
   constructor (message: string) {
-    super(`An internal error occurred:\n\n${message}\n\nPlease report this to github.com/wilsonzlin/rmd/issues`);
+    super(`An internal error occurred:\n\n${message}\n\nPlease report this to ${thisPackage.bugs.url}`);
   }
 }
 
