@@ -25,6 +25,12 @@ export class TextPosition extends SourcePosition {
   }
 
   toString (): string {
-    return `${this.name}, line ${this.line}, column ${this.col}`;
+    if (this.line == -1 && this.col == 0) {
+      return `end of ${this.name}`;
+    } else if (this.col == 0) {
+      return `${this.name}, beginning of line ${this.line}`;
+    } else {
+      return `${this.name}, line ${this.line}, column ${this.col}`;
+    }
   }
 }
