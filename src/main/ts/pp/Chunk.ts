@@ -22,15 +22,15 @@ export class Chunks extends Scanner<Chunk, TextPosition> {
     return this.peek().position;
   }
 
+  peekOffsetEOD (offset: number): Container | Leaf | null {
+    return this.source[this.next + offset] || null;
+  }
+
   protected hasRemaining (amount: number): boolean {
     return this.next + amount <= this.source.length;
   }
 
   protected incrementNext (): void {
     this.next++;
-  }
-
-  peekOffsetEOD (offset: number): Container | Leaf | null {
-    return this.source[this.next + offset] || null;
   }
 }

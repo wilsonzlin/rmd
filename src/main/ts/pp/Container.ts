@@ -9,8 +9,8 @@ export class Container {
   readonly type: ContainerType;
   readonly parent: Container | null;
   readonly indentation: string;
-  private readonly _blankPrefix: string;
   readonly contents: Chunk[];
+  private readonly _blankPrefix: string;
 
   constructor (position: TextPosition, type: ContainerType, parent: Container | null, indentation: string) {
     this.position = position;

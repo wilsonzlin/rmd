@@ -90,34 +90,6 @@ export const visitBlock = <R> (walker: SyntaxWalker<R>, st: Block): R => {
 };
 
 export abstract class Renderer implements SyntaxWalker<string> {
-  protected abstract renderBlocks (renderedBlocks: string[]): string;
-
-  protected abstract renderCell (renderedText: string, heading: boolean): string;
-
-  protected abstract renderCodeBlock (lang: string | null, rawData: string): string;
-
-  protected abstract renderDefinition (renderedTitle: string, renderedContents: string): string;
-
-  protected abstract renderDictionary (renderedDefinitions: string[]): string;
-
-  protected abstract renderHeading (level: number, renderedText: string): string;
-
-  protected abstract renderList (mode: Mode, renderedItems: string[]): string;
-
-  protected abstract renderListItem (renderedContents: string): string;
-
-  protected abstract renderParagraph (renderedText: string): string;
-
-  protected abstract renderQuote (renderedContents: string): string;
-
-  protected abstract renderRichText (raw: string, markup: Markup[]): string;
-
-  protected abstract renderRow (renderedCells: string[], heading: boolean): string;
-
-  protected abstract renderSection (type: string, cfg: Configuration, rawContents: Block[]): string;
-
-  protected abstract renderTable (renderedHead: string[], renderedBody: string[]): string;
-
   processDocument (doc: Document): string {
     return this.visitBlocks(doc.contents);
   }
@@ -216,4 +188,32 @@ export abstract class Renderer implements SyntaxWalker<string> {
       st.body.map(r => this.visitRow(r))
     );
   }
+
+  protected abstract renderBlocks (renderedBlocks: string[]): string;
+
+  protected abstract renderCell (renderedText: string, heading: boolean): string;
+
+  protected abstract renderCodeBlock (lang: string | null, rawData: string): string;
+
+  protected abstract renderDefinition (renderedTitle: string, renderedContents: string): string;
+
+  protected abstract renderDictionary (renderedDefinitions: string[]): string;
+
+  protected abstract renderHeading (level: number, renderedText: string): string;
+
+  protected abstract renderList (mode: Mode, renderedItems: string[]): string;
+
+  protected abstract renderListItem (renderedContents: string): string;
+
+  protected abstract renderParagraph (renderedText: string): string;
+
+  protected abstract renderQuote (renderedContents: string): string;
+
+  protected abstract renderRichText (raw: string, markup: Markup[]): string;
+
+  protected abstract renderRow (renderedCells: string[], heading: boolean): string;
+
+  protected abstract renderSection (type: string, cfg: Configuration, rawContents: Block[]): string;
+
+  protected abstract renderTable (renderedHead: string[], renderedBody: string[]): string;
 }

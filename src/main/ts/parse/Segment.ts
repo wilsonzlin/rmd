@@ -6,15 +6,10 @@ export class Segment extends Scanner<string, TextPosition, string> {
   private readonly name: string;
   private readonly source: string;
   private readonly indent: number;
-  
+
   private next: number;
   private line: number;
   private nextCol: number;
-
-  static fromLeaf (leaf: Leaf): Segment {
-    const position = leaf.position;
-    return new Segment(position.name, leaf.contents, position.line, position.col);
-  }
 
   constructor (name: string, sourceLines: string[], baseLine: number, indent: number) {
     super();
@@ -27,14 +22,9 @@ export class Segment extends Scanner<string, TextPosition, string> {
     this.nextCol = 0;
   }
 
-  protected incrementNext (): void {
-    // A line starts after the previous line's terminator.
-    if (this.source[this.next++] == "\n") {
-      this.line++;
-      this.nextCol = this.indent;
-    } else {
-      this.nextCol++;
-    }
+  static fromLeaf (leaf: Leaf): Segment {
+    const position = leaf.position;
+    return new Segment(position.name, leaf.contents, position.line, position.col);
   }
 
   isLineTerminator (): boolean {
@@ -55,5 +45,15 @@ export class Segment extends Scanner<string, TextPosition, string> {
 
   peekOffsetEOD (offset: number): string | null {
     return this.source[this.next + offset] || null;
+  }
+
+  protected incrementNext (): void {
+    // A line starts after the previous line's terminator.
+    if (this.source[this.next++] == "\n") {
+      this.line++;
+      this.nextCol = this.indent;
+    } else {
+      this.nextCol++;
+    }
   }
 }

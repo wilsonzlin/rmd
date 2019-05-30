@@ -1,5 +1,5 @@
 import {Block} from "./block/Block";
-import {SourceError, parserWithEnhancedErrors} from "../err/SourceError";
+import {parserWithEnhancedErrors, SourceError} from "../err/SourceError";
 import {Chunks} from "../pp/Chunk";
 import {IPosition} from "../util/Position";
 

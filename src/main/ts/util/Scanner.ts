@@ -25,17 +25,6 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
     return new SourceError(msg, this.nextPosition());
   }
 
-  private assertNotEOD (str: U | null): U {
-    if (str == Scanner.EOD) {
-      throw this.constructSourceError("Unexpected end of data");
-    }
-    return str;
-  }
-
-  protected abstract incrementNext (): void;
-
-  protected abstract hasRemaining (amount: number): boolean;
-
   atEnd (): boolean {
     return !this.hasRemaining(1);
   }
@@ -173,5 +162,16 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
     }
     this.skipAmount(match.length);
     return match.length;
+  }
+
+  protected abstract incrementNext (): void;
+
+  protected abstract hasRemaining (amount: number): boolean;
+
+  private assertNotEOD (str: U | null): U {
+    if (str == Scanner.EOD) {
+      throw this.constructSourceError("Unexpected end of data");
+    }
+    return str;
   }
 }

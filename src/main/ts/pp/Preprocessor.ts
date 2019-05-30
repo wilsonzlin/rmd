@@ -7,9 +7,8 @@ import {assert} from "../err/InternalError";
 
 class LinesProcessor {
   readonly name: string;
-  private readonly lines: string[];
   readonly root: Container;
-
+  private readonly lines: string[];
   private current: number;
   private working: string;
   private leftRemovedAmount: number;
@@ -394,4 +393,3 @@ export const preprocess = (name: string, code: string): Container => {
 
   return lines.root;
 };
-
