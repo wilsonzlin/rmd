@@ -7,6 +7,28 @@ const encoder = new AllHtmlEntities();
 export type SectionHandler = (renderer: HTMLRenderer, cfg: rmd.Configuration, contents: rmd.Block[]) => string;
 export type LanguageHandler = (renderer: HTMLRenderer, code: string) => string;
 
+const computeIfAbsent = <K, V> (map: Map<K, V>, key: K, producer: (key: K) => V): V => {
+  if (!map.has(key)) {
+    map.set(key, producer(key));
+  }
+  return map.get(key)!;
+};
+
+const getOrDefault = <K, V> (map: Map<K, V>, key: K, def: V): V => {
+  if (map.has(key)) {
+    return map.get(key)!;
+  }
+  return def;
+};
+
+const MARKUP_TAG_NAMES: { [type in rmd.MarkupType]?: string } = {
+  "STRONG": "strong",
+  "EMPHASIS": "em",
+  "STRIKETHROUGH": "strike",
+  "UNDERLINE": "u",
+  "CODE": "code",
+};
+
 export class HTMLRenderer extends rmd.Renderer {
   readonly sectionHandlers = new Map<string, SectionHandler>();
   readonly languageHandlers = new Map<string, LanguageHandler>();
@@ -78,14 +100,52 @@ export class HTMLRenderer extends rmd.Renderer {
   renderRichText (raw: string, markup: rmd.Markup[]): string {
     const starts = new Map<number, rmd.Markup[]>();
     const ends = new Map<number, rmd.Markup[]>();
+    const voids = new Map<number, rmd.Markup[]>();
+    const splits = new Set<number>();
 
     for (const m of markup) {
-      if (m instanceof rmd.LinkMarkup) {
+      const start = m.start;
+      const afterEnd = m.end + 1;
+      splits.add(start);
+      splits.add(afterEnd);
+      if (start == afterEnd) {
+        // Void tag.
+        computeIfAbsent(voids, start, () => []).push(m);
+      } else {
+        // Since tags cannot overlap, ends must be inserted in reverse order,
+        // as tags started earlier close after tags started after it.
+        computeIfAbsent(starts, start, () => []).push(m);
+        computeIfAbsent(ends, afterEnd, () => []).unshift(m);
       }
-      // TODO
     }
 
-    return encoder.encode(raw);
+    const splitsSorted = [...splits].sort((a, b) => a - b);
+
+    let lastPos = 0;
+    const split = [];
+    for (const pos of splitsSorted) {
+      split.push(encoder.encode(raw.slice(lastPos, pos)));
+      const tags = [];
+      // Process void tags first.
+      for (const m of getOrDefault(voids, pos, [])) {
+        const tagName = MARKUP_TAG_NAMES[m.type];
+        tags.push(`<${tagName}></${tagName}>`);
+      }
+      // Process end tags before start tags.
+      for (const m of getOrDefault(ends, pos, [])) {
+        const tagName = MARKUP_TAG_NAMES[m.type];
+        tags.push(`</${tagName}>`);
+      }
+      for (const m of getOrDefault(starts, pos, [])) {
+        const tagName = MARKUP_TAG_NAMES[m.type];
+        tags.push(`<${tagName}>`);
+      }
+      split.push(tags.join(""));
+      lastPos = pos;
+    }
+    split.push(encoder.encode(raw.slice(lastPos)));
+
+    return split.join("");
   }
 
   renderSection (type: string, cfg: rmd.Configuration, rawContents: rmd.Block[]): string {
