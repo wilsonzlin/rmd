@@ -1,21 +1,13 @@
 import {Segment} from "../Segment";
 import {assert} from "../../err/InternalError";
 
-export type LinkMarkupType =
-  "LINK_HEADING"
-  | "LINK_ANCHOR"
-  | "LINK_FOOTNOTE"
-  | "LINK_ARTICLE"
-  | "LINK_EMAIL"
-  | "LINK_EXTERNAL";
-
 export type MarkupType =
   "STRONG" |
   "EMPHASIS" |
   "STRIKETHROUGH" |
   "UNDERLINE" |
   "CODE" |
-  LinkMarkupType;
+  "TAG";
 
 export class Markup {
   type: MarkupType;
@@ -29,16 +21,14 @@ export class Markup {
   }
 }
 
-export class LinkMarkup extends Markup {
-  target: string;
-  tip: string | null;
-  label: string | null;
+export class TagMarkup extends Markup {
+  readonly name: string;
+  readonly attributes: Map<string, boolean | number | string>;
 
-  constructor (type: LinkMarkupType, start: number, end: number, target: string, tip: string | null, label: string | null) {
-    super(type, start, end);
-    this.target = target;
-    this.tip = tip;
-    this.label = label;
+  constructor (start: number, end: number, name: string) {
+    super("TAG", start, end);
+    this.name = name;
+    this.attributes = new Map();
   }
 }
 
