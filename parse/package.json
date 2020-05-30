@@ -1,7 +1,7 @@
 {
   "name": "rmd-parse",
   "version": "0.0.1",
-  "description": "Parser and specification for RMD, a stricter and extended version of Markdown",
+  "description": "Parser for RMD, strict and extensible Markdown",
   "main": "dist/main.js",
   "files": [
     "dist/**"
@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wilsonzlin/rmd-parse.git"
+    "url": "git+https://github.com/wilsonzlin/rmd.git"
   },
   "keywords": [
     "referenza",
@@ -24,15 +24,15 @@
     "parser"
   ],
   "author": {
-    "email": "contact@wilsonl.in",
+    "email": "npm@wilsonl.in",
     "name": "Wilson Lin",
     "url": "https://wilsonl.in/"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wilsonzlin/rmd-parse/issues"
+    "url": "https://github.com/wilsonzlin/rmd/issues"
   },
-  "homepage": "https://github.com/wilsonzlin/rmd-parse#readme",
+  "homepage": "https://github.com/wilsonzlin/rmd#readme",
   "dependencies": {
     "package": "^1.0.1"
   },

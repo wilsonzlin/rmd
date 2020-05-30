@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wilsonzlin/rmd-html.git"
+    "url": "git+https://github.com/wilsonzlin/rmd.git"
   },
   "keywords": [
     "referenza",
@@ -30,15 +30,15 @@
     "printer"
   ],
   "author": {
-    "email": "contact@wilsonl.in",
+    "email": "npm@wilsonl.in",
     "name": "Wilson Lin",
     "url": "https://wilsonl.in/"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wilsonzlin/rmd-html/issues"
+    "url": "https://github.com/wilsonzlin/rmd/issues"
   },
-  "homepage": "https://github.com/wilsonzlin/rmd-html#readme",
+  "homepage": "https://github.com/wilsonzlin/rmd#readme",
   "dependencies": {
     "@types/highlight.js": "^9.12.3",
     "@types/html-entities": "^1.2.16",
