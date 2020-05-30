@@ -5,6 +5,7 @@ import {configurableSyntaxParser} from '../Configuration';
 import {Segment} from '../Segment';
 import {parseRichText, RichText} from '../text/RichText';
 import {Block} from './Block';
+import {registerBlockParser} from './Parsers';
 
 export class Heading extends Block {
   readonly level: number;
@@ -40,3 +41,5 @@ export const parseHeading = configurableSyntaxParser<Heading>(chunks => {
 }, {
   id: val => typeof val == 'string' && /^[a-zA-Z0-9-_]+$/.test(val),
 });
+
+registerBlockParser('HEADING', parseHeading);

@@ -3,6 +3,7 @@ import {Leaf} from '../../pp/Leaf';
 import {TextPosition} from '../../util/Position';
 import {configurableSyntaxParser} from '../Configuration';
 import {Block} from './Block';
+import {registerBlockParser} from './Parsers';
 
 export class CodeBlock extends Block {
   readonly lang: string | null;
@@ -28,3 +29,5 @@ export const parseCodeBlock = configurableSyntaxParser(chunks => {
     rawCodeBlock.contents.join('\n'),
   );
 }, {});
+
+registerBlockParser('CODE_BLOCK', parseCodeBlock);

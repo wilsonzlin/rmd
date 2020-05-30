@@ -1,8 +1,8 @@
 - A
   - a
-  
+
     Continued
-    
+
     > a
     >
     > continued
@@ -20,15 +20,15 @@
 
 # Title
 
-{id="a"}
+{"id": "a"}
 ## Secondary title
 
-Paragraph of text paragraph of text paragraph of text paragraph of text paragraph of text paragraph of text 
+Paragraph of text paragraph of text paragraph of text paragraph of text paragraph of text paragraph of text
 paragraph of text paragraph of text paragraph of text paragraph of text paragraph of text paragraph of text.
 
-- Unordered list item 1 
-- Unordered list item 2 
-- Unordered list item 3 
+- Unordered list item 1
+- Unordered list item 2
+- Unordered list item 3
 - Unordered list item 4
 
 ' Ordered list item 1
@@ -50,7 +50,7 @@ paragraph of text paragraph of text paragraph of text paragraph of text paragrap
   >   - item in item
   >     > a
 
-{cfg}
+{}
 `````code
 code block
 
@@ -68,13 +68,12 @@ code block
         a **b** c
     1. Third level ordered item 2
   - Second level unordered item 2
-  
+
 |Table|Heading|Cells|
-|---|---|---|
-|Row|1|Cells| 
-|Row|2|Cells| 
-    
+|---|
+|Row|1|Cells|
+|Row|2|Cells|
 
-:::custom
+::: begin custom
 
-:::endcustom
+::: end custom

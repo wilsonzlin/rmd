@@ -33,7 +33,7 @@ class LinesProcessor {
    * Has remaining lines.
    */
   hasNext (): boolean {
-    return this.current < this.lines.length;
+    return this.current < this.lines.length - 1;
   }
 
   /**
@@ -109,7 +109,7 @@ class LinesProcessor {
    * Check if the current line equals the current container's blank prefix.
    */
   equalsBlankPrefix (): boolean {
-    return this.beginsWith(this.currentBlankPrefix());
+    return this.working === this.currentBlankPrefix();
   }
 
   /**
@@ -354,6 +354,10 @@ export const preprocess = (name: string, code: string): Container => {
       // Code block.
       currentCodeBlockDelimiter = '`'.repeat(lines.beginningRepetitionsOf('`'));
       const lang = lines.removeLeft(currentCodeBlockDelimiter.length).get().trim();
+      if (!lines.hasNext()) {
+        throw lines.error('Document ends inside code block');
+      }
+      assert(lines.next());
       lines.startLeaf('CODE_BLOCK', ['lang', lang]);
 
     } else if (lines.firstChar() == '|') {

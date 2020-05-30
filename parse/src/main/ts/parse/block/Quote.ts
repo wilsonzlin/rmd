@@ -5,6 +5,7 @@ import {TextPosition} from '../../util/Position';
 import {configurableSyntaxParser} from '../Configuration';
 import {Block} from './Block';
 import {parseBlocks} from './Blocks';
+import {registerBlockParser} from './Parsers';
 
 export class Quote extends Block {
   readonly contents: Block[];
@@ -24,3 +25,5 @@ export const parseQuote = configurableSyntaxParser(chunks => {
     parseBlocks(new Chunks(rawQuote.contents)),
   );
 }, {});
+
+registerBlockParser('QUOTE', parseQuote);

@@ -5,6 +5,7 @@ import {TextPosition} from '../../util/Position';
 import {configurableSyntaxParser} from '../Configuration';
 import {Block} from './Block';
 import {parseBlocks} from './Blocks';
+import {registerBlockParser} from './Parsers';
 
 export enum Mode {
   ORDERED, UNORDERED
@@ -61,3 +62,6 @@ export const parseOrderedList = configurableSyntaxParser(chunks => {
 }, {
   ...commonListConfigurationSchema,
 });
+
+registerBlockParser('ORDERED_LIST_ITEM', parseOrderedList);
+registerBlockParser('UNORDERED_LIST_ITEM', parseUnorderedList);

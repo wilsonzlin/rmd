@@ -8,7 +8,7 @@ export type ParserAcceptingConfiguration<B extends Block> = (chunks: Chunks, cfg
 
 export type Configuration = { values: object; position: IPosition; } | null;
 export type ConfigurationSchema<B extends Block> = {
-  [key in keyof B]?: (val: any) => boolean;
+  [key in keyof B]?: (val: unknown) => boolean;
 };
 
 export const configurableSyntaxParser = <B extends Block> (parser: Parser<B>, cfgSchema: ConfigurationSchema<B>): ParserAcceptingConfiguration<B> => {
@@ -17,8 +17,8 @@ export const configurableSyntaxParser = <B extends Block> (parser: Parser<B>, cf
 
     if (cfg != null) {
       Object.keys(cfg.values).forEach(key => {
-        let val = cfg.values[key];
-        let schema = cfgSchema[key];
+        const val = cfg.values[key];
+        const schema = cfgSchema[key];
 
         if (!schema) {
           throw new SourceError(`Configuration key "${key}" is not applicable`, cfg.position);

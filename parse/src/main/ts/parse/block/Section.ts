@@ -6,6 +6,7 @@ import {TextPosition} from '../../util/Position';
 import {Configuration} from '../Configuration';
 import {Block} from './Block';
 import {parseBlocks} from './Blocks';
+import {registerBlockParser} from './Parsers';
 
 export class Section extends Block {
   readonly type: string;
@@ -43,7 +44,7 @@ const parseDelimiter = (delimiter: Leaf): Delimiter => {
   assert(delimiter.type == 'SECTION_DELIMITER' && delimiter.contents.length == 1);
 
   const mode = delimiter.getMetadata('mode');
-  assert(mode === 'START' || mode === 'END');
+  assert(mode === 'BEGIN' || mode === 'END');
   const type = delimiter.getMetadata('type');
   assert(typeof type == 'string');
   const level = delimiter.getMetadata('level');
@@ -75,3 +76,5 @@ export const parseSection = parserWithEnhancedErrors((chunks: Chunks, cfg: Confi
     parseBlocks(new Chunks(rawSection)),
   );
 });
+
+registerBlockParser('SECTION_DELIMITER', parseSection);

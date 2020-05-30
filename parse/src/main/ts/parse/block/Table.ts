@@ -5,6 +5,7 @@ import {configurableSyntaxParser} from '../Configuration';
 import {Segment} from '../Segment';
 import {parseRichText, RichText} from '../text/RichText';
 import {Block} from './Block';
+import {registerBlockParser} from './Parsers';
 
 export type Cell = {
   text: RichText;
@@ -86,3 +87,5 @@ export const parseTable = configurableSyntaxParser(chunks => {
     body,
   );
 }, {});
+
+registerBlockParser('TABLE', parseTable);

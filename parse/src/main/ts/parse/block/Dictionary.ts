@@ -8,6 +8,7 @@ import {Segment} from '../Segment';
 import {parseRichText, RichText} from '../text/RichText';
 import {Block} from './Block';
 import {parseBlocks} from './Blocks';
+import {registerBlockParser} from './Parsers';
 
 export type Definition = {
   title: RichText;
@@ -50,3 +51,5 @@ export const parseDictionary = configurableSyntaxParser(chunks => {
 
   return new Dictionary(position, definitions);
 }, {});
+
+registerBlockParser('DEFINITION', parseDictionary);

@@ -6,6 +6,7 @@ import {configurableSyntaxParser} from '../Configuration';
 import {Segment} from '../Segment';
 import {parseRichText, RichText} from '../text/RichText';
 import {Block} from './Block';
+import {registerBlockParser} from './Parsers';
 
 export class Paragraph extends Block {
   readonly text: RichText;
@@ -22,3 +23,5 @@ export const parseParagraph = configurableSyntaxParser((chunks: Chunks): Paragra
 
   return new Paragraph(raw.position, parseRichText(Segment.fromLeaf(raw)));
 }, {});
+
+registerBlockParser('PARAGRAPH', parseParagraph);

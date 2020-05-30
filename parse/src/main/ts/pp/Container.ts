@@ -10,19 +10,15 @@ export class Container {
   readonly parent: Container | null;
   readonly indentation: string;
   readonly contents: Chunk[];
-  private readonly _blankPrefix: string;
+  readonly blankPrefix: string;
 
   constructor (position: TextPosition, type: ContainerType, parent: Container | null, indentation: string) {
     this.position = position;
     this.type = type;
     this.parent = parent;
     this.indentation = indentation;
-    this._blankPrefix = trimRight(indentation);
+    this.blankPrefix = trimRight(indentation);
     this.contents = [];
-  }
-
-  get blankPrefix (): string {
-    return this._blankPrefix;
   }
 
   add (chunk: Chunk): this {
