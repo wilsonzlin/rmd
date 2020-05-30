@@ -1,6 +1,6 @@
-import {AllHtmlEntities} from "html-entities";
-import * as rmd from "rmd-parse";
-import hljs from "highlight.js";
+import hljs from 'highlight.js';
+import {AllHtmlEntities} from 'html-entities';
+import * as rmd from 'rmd-parse';
 
 const encoder = new AllHtmlEntities();
 
@@ -21,12 +21,14 @@ const getOrDefault = <K, V> (map: Map<K, V>, key: K, def: V): V => {
   return def;
 };
 
-const MARKUP_TAG_NAMES: { [type in rmd.MarkupType]?: string } = {
-  "STRONG": "strong",
-  "EMPHASIS": "em",
-  "STRIKETHROUGH": "strike",
-  "UNDERLINE": "u",
-  "CODE": "code",
+const tagAttrsHtml = (attributes: rmd.Markup['attributes']): string => {
+  return Array.from(
+    attributes.entries(),
+    ([name, value]) =>
+      typeof value === 'boolean'
+        ? value ? name : ''
+        : `${name}="${encoder.encode(`${value}`)}"`,
+  ).join(' ');
 };
 
 export class HTMLRenderer extends rmd.Renderer {
@@ -50,7 +52,7 @@ export class HTMLRenderer extends rmd.Renderer {
   }
 
   renderBlocks (renderedBlocks: string[]): string {
-    return renderedBlocks.join("");
+    return renderedBlocks.join('');
   }
 
   renderCodeBlock (lang: string | null, rawData: string): string {
@@ -73,7 +75,7 @@ export class HTMLRenderer extends rmd.Renderer {
   }
 
   renderDictionary (renderedDefinitions: string[]): string {
-    return `<dl>${renderedDefinitions.join("")}</dl>`;
+    return `<dl>${renderedDefinitions.join('')}</dl>`;
   }
 
   renderHeading (level: number, renderedText: string): string {
@@ -85,8 +87,8 @@ export class HTMLRenderer extends rmd.Renderer {
   }
 
   renderList (mode: rmd.Mode, renderedItems: string[]): string {
-    const tag = mode == rmd.Mode.ORDERED ? "ol" : "ul";
-    return `<${tag}>${renderedItems.join("")}</${tag}>`;
+    const tag = mode == rmd.Mode.ORDERED ? 'ol' : 'ul';
+    return `<${tag}>${renderedItems.join('')}</${tag}>`;
   }
 
   renderParagraph (renderedText: string): string {
@@ -128,24 +130,24 @@ export class HTMLRenderer extends rmd.Renderer {
       const tags = [];
       // Process void tags first.
       for (const m of getOrDefault(voids, pos, [])) {
-        const tagName = MARKUP_TAG_NAMES[m.type];
-        tags.push(`<${tagName}></${tagName}>`);
+        const tagName = m.type;
+        tags.push(`<${tagName} ${tagAttrsHtml(m.attributes)}></${tagName}>`);
       }
       // Process end tags before start tags.
       for (const m of getOrDefault(ends, pos, [])) {
-        const tagName = MARKUP_TAG_NAMES[m.type];
+        const tagName = m.type;
         tags.push(`</${tagName}>`);
       }
       for (const m of getOrDefault(starts, pos, [])) {
-        const tagName = MARKUP_TAG_NAMES[m.type];
-        tags.push(`<${tagName}>`);
+        const tagName = m.type;
+        tags.push(`<${tagName} ${tagAttrsHtml(m.attributes)}>`);
       }
-      split.push(tags.join(""));
+      split.push(tags.join(''));
       lastPos = pos;
     }
     split.push(encoder.encode(raw.slice(lastPos)));
 
-    return split.join("");
+    return split.join('');
   }
 
   renderSection (type: string, cfg: rmd.Configuration, rawContents: rmd.Block[]): string {
@@ -157,15 +159,15 @@ export class HTMLRenderer extends rmd.Renderer {
   }
 
   renderRow (renderedCells: string[], _heading: boolean): string {
-    return `<tr>${renderedCells.join("")}</tr>`;
+    return `<tr>${renderedCells.join('')}</tr>`;
   }
 
   renderCell (renderedText: string, heading: boolean): string {
-    const tag = heading ? "th" : "td";
+    const tag = heading ? 'th' : 'td';
     return `<${tag}>${renderedText}</${tag}>`;
   }
 
   renderTable (renderedHead: string[], renderedBody: string[]): string {
-    return `<table><thead>${renderedHead.join("")}<tbody>${renderedBody.join("")}</table>`;
+    return `<table><thead>${renderedHead.join('')}<tbody>${renderedBody.join('')}</table>`;
   }
 }

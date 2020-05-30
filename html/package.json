@@ -46,7 +46,7 @@
     "highlight.js": "^9.15.6",
     "html-entities": "^1.2.1",
     "minimist": "^1.2.0",
-    "rmd-parse": "^0.0.2"
+    "rmd-parse": "^0.1.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import minimist from "minimist";
-import * as fs from "fs";
-import * as rmd from "rmd-parse";
-import {HTMLRenderer} from "./HTMLRenderer";
+import * as fs from 'fs';
+import minimist from 'minimist';
+import * as rmd from 'rmd-parse';
+import {HTMLRenderer} from './HTMLRenderer';
 
 enum CLI_ERROR {
   IO_READ = 1,
@@ -22,7 +22,7 @@ process.exit((args => {
         if (stack && err.stack) {
           console.error();
           console.error(`Stack trace:`);
-          console.error(err.stack.slice(err.name.length + ": ".length + err.message.length + "\n".length));
+          console.error(err.stack.slice(err.name.length + ': '.length + err.message.length + '\n'.length));
         }
       } else {
         console.error(err);
@@ -36,7 +36,7 @@ process.exit((args => {
 
   let input: string;
   try {
-    input = fs.readFileSync(inFile, "utf8");
+    input = fs.readFileSync(inFile, 'utf8');
   } catch (err) {
     return error(`Failed to read file with error:`, CLI_ERROR.IO_READ, err);
   }

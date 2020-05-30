@@ -1,2 +1,1 @@
-
-export * from "./HTMLRenderer";
+export * from './HTMLRenderer';

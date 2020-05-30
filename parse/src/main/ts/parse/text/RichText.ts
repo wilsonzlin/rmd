@@ -89,7 +89,8 @@ export const parseRichText = (raw: Segment, breakChars: string = ''): RichText =
         markup.push(new Markup(
           tag.tagName,
           tag.start,
-          tag.start,
+          // `end` is inclusive.
+          tag.start - 1,
           tag.attributes,
         ));
       } else {
