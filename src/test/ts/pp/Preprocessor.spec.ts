@@ -1,8 +1,8 @@
-import {preprocess} from "../../../main/ts/pp/Preprocessor";
-import {readTestResource} from "../_test";
+import {preprocess} from '../../../main/ts/pp/Preprocessor';
+import {readTestResource} from '../_test';
 
-describe("preprocess", () => {
-  const chunks = preprocess("overall", readTestResource("code/overall.rmd"));
+describe('preprocess', () => {
+  const chunks = preprocess('overall', readTestResource('code/overall.rmd'));
 
   // TODO
 });

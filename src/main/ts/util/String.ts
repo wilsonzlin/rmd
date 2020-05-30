@@ -1,5 +1,5 @@
 export function trimRight (str: string): string {
-  return str.replace(/\s+$/, "");
+  return str.replace(/\s+$/, '');
 }
 
 export function matchesAt (str: string, offset: number, query: string): boolean {

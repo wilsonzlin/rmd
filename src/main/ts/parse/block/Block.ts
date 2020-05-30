@@ -1,4 +1,4 @@
-import {TextPosition} from "../../util/Position";
+import {TextPosition} from '../../util/Position';
 
 export abstract class Block {
   readonly position: TextPosition;

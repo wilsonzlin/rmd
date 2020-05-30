@@ -1,6 +1,6 @@
-import {Scanner} from "../util/Scanner";
-import {TextPosition} from "../util/Position";
-import {Leaf} from "../pp/Leaf";
+import {Leaf} from '../pp/Leaf';
+import {TextPosition} from '../util/Position';
+import {Scanner} from '../util/Scanner';
 
 export class Segment extends Scanner<string, TextPosition, string> {
   private readonly name: string;
@@ -14,7 +14,7 @@ export class Segment extends Scanner<string, TextPosition, string> {
   constructor (name: string, sourceLines: string[], baseLine: number, indent: number) {
     super();
     this.name = name;
-    this.source = sourceLines.join("\n");
+    this.source = sourceLines.join('\n');
     this.indent = indent;
 
     this.next = 0;
@@ -28,7 +28,7 @@ export class Segment extends Scanner<string, TextPosition, string> {
   }
 
   isLineTerminator (): boolean {
-    return this.peekEOD() == "\n";
+    return this.peekEOD() == '\n';
   }
 
   hasRemaining (amount: number): boolean {
@@ -49,7 +49,7 @@ export class Segment extends Scanner<string, TextPosition, string> {
 
   protected incrementNext (): void {
     // A line starts after the previous line's terminator.
-    if (this.source[this.next++] == "\n") {
+    if (this.source[this.next++] == '\n') {
       this.line++;
       this.nextCol = this.indent;
     } else {

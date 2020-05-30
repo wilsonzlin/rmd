@@ -1,10 +1,10 @@
-import {parseRichText, RichText} from "../text/RichText";
-import {configurableSyntaxParser} from "../Configuration";
-import {Block} from "./Block";
-import {TextPosition} from "../../util/Position";
-import {assert} from "../../err/InternalError";
-import {Leaf} from "../../pp/Leaf";
-import {Segment} from "../Segment";
+import {assert} from '../../err/InternalError';
+import {Leaf} from '../../pp/Leaf';
+import {TextPosition} from '../../util/Position';
+import {configurableSyntaxParser} from '../Configuration';
+import {Segment} from '../Segment';
+import {parseRichText, RichText} from '../text/RichText';
+import {Block} from './Block';
 
 export type Cell = {
   text: RichText;
@@ -28,24 +28,24 @@ export class Table extends Block {
 }
 
 export const parseTable = configurableSyntaxParser(chunks => {
-  assert(chunks.matchesPred(unit => unit.type == "TABLE"));
+  assert(chunks.matchesPred(unit => unit.type == 'TABLE'));
   const rawTable = chunks.accept() as Leaf;
 
   const head: Row[] = [];
   const body: Row[] = [];
 
   const raw = Segment.fromLeaf(rawTable);
-  raw.requireUnit("|");
+  raw.requireUnit('|');
 
   let headPassed = false;
   let cells: Cell[] = [];
   let expectedCells = -1;
   while (!raw.atEnd()) {
     // WARNING: This does not work if last line is separator and file doesn't have line terminator at end.
-    if (raw.skipIfMatches("---|\n")) {
+    if (raw.skipIfMatches('---|\n')) {
       // Head-body separator. Must only appear once.
       if (headPassed) {
-        throw raw.constructSourceError("Table head separator already exists");
+        throw raw.constructSourceError('Table head separator already exists');
       }
       headPassed = true;
       while (body.length) {
@@ -59,7 +59,7 @@ export const parseTable = configurableSyntaxParser(chunks => {
           heading: true,
         });
       }
-    } else if (raw.peek() === "\n") {
+    } else if (raw.peek() === '\n') {
       raw.skip();
       if (expectedCells == -1) {
         expectedCells = cells.length;
@@ -69,9 +69,9 @@ export const parseTable = configurableSyntaxParser(chunks => {
       body.push({cells: cells, heading: false});
       cells = [];
     } else {
-      cells.push({text: parseRichText(raw.emptyCollected(), "|\n"), heading: false});
+      cells.push({text: parseRichText(raw.emptyCollected(), '|\n'), heading: false});
     }
-    raw.requireUnit("|");
+    raw.requireUnit('|');
   }
   if (expectedCells != -1 && cells.length != expectedCells) {
     throw raw.constructSourceError(`Expected ${expectedCells} cells, got ${cells.length}`);
@@ -83,6 +83,6 @@ export const parseTable = configurableSyntaxParser(chunks => {
   return new Table(
     rawTable.position,
     head,
-    body
+    body,
   );
 }, {});

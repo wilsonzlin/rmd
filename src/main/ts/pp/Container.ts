@@ -1,8 +1,8 @@
-import {trimRight} from "../util/String";
-import {TextPosition} from "../util/Position";
-import {Chunk} from "./Chunk";
+import {TextPosition} from '../util/Position';
+import {trimRight} from '../util/String';
+import {Chunk} from './Chunk';
 
-export type ContainerType = "DOCUMENT" | "UNORDERED_LIST_ITEM" | "ORDERED_LIST_ITEM" | "QUOTE" | "DEFINITION";
+export type ContainerType = 'DOCUMENT' | 'UNORDERED_LIST_ITEM' | 'ORDERED_LIST_ITEM' | 'QUOTE' | 'DEFINITION';
 
 export class Container {
   readonly position: TextPosition;

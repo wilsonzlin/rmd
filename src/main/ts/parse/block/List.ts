@@ -1,10 +1,10 @@
-import {Block} from "./Block";
-import {configurableSyntaxParser} from "../Configuration";
-import {Chunks} from "../../pp/Chunk";
-import {Container} from "../../pp/Container";
-import {TextPosition} from "../../util/Position";
-import {parseBlocks} from "./Blocks";
-import {assert} from "../../err/InternalError";
+import {assert} from '../../err/InternalError';
+import {Chunks} from '../../pp/Chunk';
+import {Container} from '../../pp/Container';
+import {TextPosition} from '../../util/Position';
+import {configurableSyntaxParser} from '../Configuration';
+import {Block} from './Block';
+import {parseBlocks} from './Blocks';
 
 export enum Mode {
   ORDERED, UNORDERED
@@ -31,7 +31,7 @@ const parseList = (chunks: Chunks, mode: Mode) => {
   const position = chunks.nextPosition();
 
   const chunkType = chunks.peek().type;
-  assert(chunkType == "UNORDERED_LIST_ITEM" || chunkType == "ORDERED_LIST_ITEM");
+  assert(chunkType == 'UNORDERED_LIST_ITEM' || chunkType == 'ORDERED_LIST_ITEM');
 
   const items: ListItem[] = [];
 

@@ -1,7 +1,7 @@
-import {Block} from "./block/Block";
-import {parserWithEnhancedErrors, SourceError} from "../err/SourceError";
-import {Chunks} from "../pp/Chunk";
-import {IPosition} from "../util/Position";
+import {parserWithEnhancedErrors, SourceError} from '../err/SourceError';
+import {Chunks} from '../pp/Chunk';
+import {IPosition} from '../util/Position';
+import {Block} from './block/Block';
 
 export type Parser<B extends Block> = (chunks: Chunks) => B;
 export type ParserAcceptingConfiguration<B extends Block> = (chunks: Chunks, cfg: Configuration) => B;

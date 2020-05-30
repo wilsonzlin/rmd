@@ -1,10 +1,10 @@
-import {Chunks} from "../../pp/Chunk";
-import {Container} from "../../pp/Container";
-import {Block} from "./Block";
-import {configurableSyntaxParser} from "../Configuration";
-import {TextPosition} from "../../util/Position";
-import {parseBlocks} from "./Blocks";
-import {assert} from "../../err/InternalError";
+import {assert} from '../../err/InternalError';
+import {Chunks} from '../../pp/Chunk';
+import {Container} from '../../pp/Container';
+import {TextPosition} from '../../util/Position';
+import {configurableSyntaxParser} from '../Configuration';
+import {Block} from './Block';
+import {parseBlocks} from './Blocks';
 
 export class Quote extends Block {
   readonly contents: Block[];
@@ -16,11 +16,11 @@ export class Quote extends Block {
 }
 
 export const parseQuote = configurableSyntaxParser(chunks => {
-  assert(chunks.matchesPred(unit => unit.type == "QUOTE"));
+  assert(chunks.matchesPred(unit => unit.type == 'QUOTE'));
   const rawQuote = chunks.accept() as Container;
 
   return new Quote(
     rawQuote.position,
-    parseBlocks(new Chunks(rawQuote.contents))
+    parseBlocks(new Chunks(rawQuote.contents)),
   );
 }, {});

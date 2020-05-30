@@ -1,11 +1,11 @@
-import {Block} from "./Block";
-import {Chunk, Chunks} from "../../pp/Chunk";
-import {Configuration} from "../Configuration";
-import {Leaf} from "../../pp/Leaf";
-import {TextPosition} from "../../util/Position";
-import {parseBlocks} from "./Blocks";
-import {parserWithEnhancedErrors} from "../../err/SourceError";
-import {assert} from "../../err/InternalError";
+import {assert} from '../../err/InternalError';
+import {parserWithEnhancedErrors} from '../../err/SourceError';
+import {Chunk, Chunks} from '../../pp/Chunk';
+import {Leaf} from '../../pp/Leaf';
+import {TextPosition} from '../../util/Position';
+import {Configuration} from '../Configuration';
+import {Block} from './Block';
+import {parseBlocks} from './Blocks';
 
 export class Section extends Block {
   readonly type: string;
@@ -22,38 +22,38 @@ export class Section extends Block {
 
 class Delimiter {
   readonly level: number;
-  readonly mode: "BEGIN" | "END";
+  readonly mode: 'BEGIN' | 'END';
   readonly type: string;
 
-  constructor (level: number, mode: "BEGIN" | "END", type: string) {
+  constructor (level: number, mode: 'BEGIN' | 'END', type: string) {
     this.level = level;
     this.mode = mode;
     this.type = type;
   }
 
   isEndOf (other: Delimiter): boolean {
-    return this.mode == "BEGIN" &&
-      other.mode == "END" &&
+    return this.mode == 'BEGIN' &&
+      other.mode == 'END' &&
       this.level == other.level &&
       this.type == other.type;
   }
 }
 
 const parseDelimiter = (delimiter: Leaf): Delimiter => {
-  assert(delimiter.type == "SECTION_DELIMITER" && delimiter.contents.length == 1);
+  assert(delimiter.type == 'SECTION_DELIMITER' && delimiter.contents.length == 1);
 
-  const mode = delimiter.getMetadata("mode");
-  assert(mode === "START" || mode === "END");
-  const type = delimiter.getMetadata("type");
-  assert(typeof type == "string");
-  const level = delimiter.getMetadata("level");
-  assert(typeof level == "number");
+  const mode = delimiter.getMetadata('mode');
+  assert(mode === 'START' || mode === 'END');
+  const type = delimiter.getMetadata('type');
+  assert(typeof type == 'string');
+  const level = delimiter.getMetadata('level');
+  assert(typeof level == 'number');
 
   return new Delimiter(level, mode, type);
 };
 
 export const parseSection = parserWithEnhancedErrors((chunks: Chunks, cfg: Configuration): Section => {
-  assert(chunks.matchesPred(unit => unit.type == "SECTION_DELIMITER"));
+  assert(chunks.matchesPred(unit => unit.type == 'SECTION_DELIMITER'));
   const rawDelimiter = chunks.accept() as Leaf;
 
   const rawSection: Chunk[] = [];
@@ -62,7 +62,7 @@ export const parseSection = parserWithEnhancedErrors((chunks: Chunks, cfg: Confi
 
   while (!chunks.atEnd()) {
     const chunk = chunks.accept();
-    if (chunk.type == "SECTION_DELIMITER" && parseDelimiter(chunk).isEndOf(delimiter)) {
+    if (chunk.type == 'SECTION_DELIMITER' && parseDelimiter(chunk).isEndOf(delimiter)) {
       break;
     }
     rawSection.push(chunk);
@@ -72,6 +72,6 @@ export const parseSection = parserWithEnhancedErrors((chunks: Chunks, cfg: Confi
     rawDelimiter.position,
     delimiter.type,
     cfg,
-    parseBlocks(new Chunks(rawSection))
+    parseBlocks(new Chunks(rawSection)),
   );
 });

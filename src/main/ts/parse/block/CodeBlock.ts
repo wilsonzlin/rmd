@@ -1,8 +1,8 @@
-import {configurableSyntaxParser} from "../Configuration";
-import {Leaf} from "../../pp/Leaf";
-import {Block} from "./Block";
-import {TextPosition} from "../../util/Position";
-import {assert} from "../../err/InternalError";
+import {assert} from '../../err/InternalError';
+import {Leaf} from '../../pp/Leaf';
+import {TextPosition} from '../../util/Position';
+import {configurableSyntaxParser} from '../Configuration';
+import {Block} from './Block';
 
 export class CodeBlock extends Block {
   readonly lang: string | null;
@@ -16,15 +16,15 @@ export class CodeBlock extends Block {
 }
 
 export const parseCodeBlock = configurableSyntaxParser(chunks => {
-  assert(chunks.matchesPred(unit => unit.type == "CODE_BLOCK"));
+  assert(chunks.matchesPred(unit => unit.type == 'CODE_BLOCK'));
   const rawCodeBlock = chunks.accept() as Leaf;
 
-  const lang = rawCodeBlock.getMetadata("lang");
-  assert(typeof lang == "string");
+  const lang = rawCodeBlock.getMetadata('lang');
+  assert(typeof lang == 'string');
 
   return new CodeBlock(
     rawCodeBlock.position,
     lang || null,
-    rawCodeBlock.contents.join("\n")
+    rawCodeBlock.contents.join('\n'),
   );
 }, {});

@@ -1,9 +1,9 @@
-import {SourceError} from "../err/SourceError";
-import {beginsWith, countCharRepetitionsAt, trimRight} from "../util/String";
-import {Leaf, LeafType} from "./Leaf";
-import {Container, ContainerType} from "./Container";
-import {TextPosition} from "../util/Position";
-import {assert} from "../err/InternalError";
+import {assert} from '../err/InternalError';
+import {SourceError} from '../err/SourceError';
+import {TextPosition} from '../util/Position';
+import {beginsWith, countCharRepetitionsAt, trimRight} from '../util/String';
+import {Container, ContainerType} from './Container';
+import {Leaf, LeafType} from './Leaf';
 
 class LinesProcessor {
   readonly name: string;
@@ -19,13 +19,13 @@ class LinesProcessor {
   constructor (name: string, lines: string[]) {
     this.name = name;
     this.lines = lines;
-    this.root = new Container({name: name, line: 1, col: 0}, "DOCUMENT", null, "");
+    this.root = new Container({name: name, line: 1, col: 0}, 'DOCUMENT', null, '');
 
     this.currentContainer = this.root;
     this.currentLeaf = null;
 
     this.current = -1;
-    this.working = "";
+    this.working = '';
     this.leftRemovedAmount = 0;
   }
 
@@ -203,7 +203,7 @@ class LinesProcessor {
     this.currentContainer.add(
       new Leaf(this.position(), type)
         .add(this.working)
-        .setMetadataPairs(...metadata)
+        .setMetadataPairs(...metadata),
     );
     this.currentLeaf = null;
   }
@@ -273,7 +273,7 @@ export const preprocess = (name: string, code: string): Container => {
       // Line break for formatting purposes; ignore.
       if (currentCodeBlockDelimiter != null) {
         // Currently in code block, so add blank line.
-        lines.appendLeafCustom("");
+        lines.appendLeafCustom('');
       } else {
         lines.endLeaf();
       }
@@ -298,96 +298,96 @@ export const preprocess = (name: string, code: string): Container => {
 
     // Check if need to start new level (e.g. starting a new list, quote, or definition).
     switch (lines.firstChar()) {
-    case "'":
-    case "-":
+    case '\'':
+    case '-':
       // List item.
-      if (lines.secondChar() != " ") {
-        throw lines.error("List item must have space after `'` or `-`");
+      if (lines.secondChar() != ' ') {
+        throw lines.error('List item must have space after `\'` or `-`');
       }
       // List items require exactly two additional spaces for continuation lines indentation.
       lines.newContainer(
-        lines.firstChar() == "'" ? "ORDERED_LIST_ITEM" : "UNORDERED_LIST_ITEM",
-        `${lines.currentIndentation()}  `
+        lines.firstChar() == '\'' ? 'ORDERED_LIST_ITEM' : 'UNORDERED_LIST_ITEM',
+        `${lines.currentIndentation()}  `,
       );
       lines.removeLeft(2);
       break;
 
-    case ">":
+    case '>':
       // Quote.
-      if (lines.secondChar() != " ") {
-        throw lines.error("Quote lines must have space after `>`");
+      if (lines.secondChar() != ' ') {
+        throw lines.error('Quote lines must have space after `>`');
       }
-      lines.newContainer("QUOTE", `${lines.currentIndentation()}> `);
+      lines.newContainer('QUOTE', `${lines.currentIndentation()}> `);
       lines.removeLeft(2);
       break;
 
-    case "(":
+    case '(':
       // Definition.
       // Definition title verification and unwrapping will be done by line processing later.
       // Definition list definitions require exactly two additional spaces for continuation lines indentation.
-      lines.newContainer("DEFINITION", `${lines.currentIndentation()}  `);
+      lines.newContainer('DEFINITION', `${lines.currentIndentation()}  `);
       break;
 
-    case " ":
-    case "\t":
-    case "\f":
-    case "\v":
+    case ' ':
+    case '\t':
+    case '\f':
+    case '\v':
       // Line cannot start with whitespace.
-      throw lines.error("Line cannot start with whitespace after indentation");
+      throw lines.error('Line cannot start with whitespace after indentation');
     }
 
     // Process line.
-    if (lines.firstChar() == "(") {
+    if (lines.firstChar() == '(') {
       // Definition.
-      if (lines.lastChar() != ")") {
-        throw lines.error("Definition titles must be a single line ending with a right parenthesis");
+      if (lines.lastChar() != ')') {
+        throw lines.error('Definition titles must be a single line ending with a right parenthesis');
       }
       lines.removeLeft(1);
       lines.removeRight(1);
-      lines.singletonLeaf("DEFINITION_TITLE");
+      lines.singletonLeaf('DEFINITION_TITLE');
 
-    } else if (lines.firstChar() == "{") {
+    } else if (lines.firstChar() == '{') {
       // Configuration.
-      lines.singletonLeaf("CONFIGURATION");
+      lines.singletonLeaf('CONFIGURATION');
 
-    } else if (lines.beginsWith("``")) {
+    } else if (lines.beginsWith('``')) {
       // Code block.
-      currentCodeBlockDelimiter = "`".repeat(lines.beginningRepetitionsOf("`"));
+      currentCodeBlockDelimiter = '`'.repeat(lines.beginningRepetitionsOf('`'));
       const lang = lines.removeLeft(currentCodeBlockDelimiter.length).get().trim();
-      lines.startLeaf("CODE_BLOCK", ["lang", lang]);
+      lines.startLeaf('CODE_BLOCK', ['lang', lang]);
 
-    } else if (lines.firstChar() == "|") {
+    } else if (lines.firstChar() == '|') {
       // Table
-      lines.startOrAppendLeaf("TABLE");
+      lines.startOrAppendLeaf('TABLE');
 
-    } else if (lines.beginsWith("::")) {
+    } else if (lines.beginsWith('::')) {
       // Section.
       // Only allowed at the document level.
       if (!lines.currentlyDocument()) {
-        throw lines.error("Sections can only be at the document level");
+        throw lines.error('Sections can only be at the document level');
       }
       const matches = lines.regexMatches(/^(:+) (begin|end) (.*)$/);
       if (!matches) {
-        throw lines.error("Invalid section delimiter");
+        throw lines.error('Invalid section delimiter');
       }
       lines.singletonLeaf(
-        "SECTION_DELIMITER",
-        ["level", matches[1].length],
-        ["mode", matches[2].toUpperCase()],
-        ["type", matches[3].trim()]
+        'SECTION_DELIMITER',
+        ['level', matches[1].length],
+        ['mode', matches[2].toUpperCase()],
+        ['type', matches[3].trim()],
       );
 
-    } else if (lines.firstChar() == "#") {
+    } else if (lines.firstChar() == '#') {
       // Heading.
       // Only allowed at the document level.
       if (!lines.currentlyDocument()) {
-        throw lines.error("Headings can only be at the document level");
+        throw lines.error('Headings can only be at the document level');
       }
-      lines.singletonLeaf("HEADING");
+      lines.singletonLeaf('HEADING');
 
     } else {
       // Paragraph.
-      lines.startOrAppendLeaf("PARAGRAPH");
+      lines.startOrAppendLeaf('PARAGRAPH');
     }
   }
 

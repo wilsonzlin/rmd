@@ -1,13 +1,13 @@
-import {Block} from "./Block";
-import {configurableSyntaxParser} from "../Configuration";
-import {Chunks} from "../../pp/Chunk";
-import {Container} from "../../pp/Container";
-import {parseRichText, RichText} from "../text/RichText";
-import {Leaf} from "../../pp/Leaf";
-import {TextPosition} from "../../util/Position";
-import {Segment} from "../Segment";
-import {parseBlocks} from "./Blocks";
-import {assert} from "../../err/InternalError";
+import {assert} from '../../err/InternalError';
+import {Chunks} from '../../pp/Chunk';
+import {Container} from '../../pp/Container';
+import {Leaf} from '../../pp/Leaf';
+import {TextPosition} from '../../util/Position';
+import {configurableSyntaxParser} from '../Configuration';
+import {Segment} from '../Segment';
+import {parseRichText, RichText} from '../text/RichText';
+import {Block} from './Block';
+import {parseBlocks} from './Blocks';
 
 export type Definition = {
   title: RichText;
@@ -28,11 +28,11 @@ export const parseDictionary = configurableSyntaxParser(chunks => {
 
   const definitions: Definition[] = [];
 
-  while (!chunks.atEnd() && chunks.matchesPred(unit => unit.type == "DEFINITION")) {
+  while (!chunks.atEnd() && chunks.matchesPred(unit => unit.type == 'DEFINITION')) {
     const rawDefinition = chunks.accept() as Container;
     const contents = new Chunks(rawDefinition.contents);
 
-    assert(contents.matchesPred(unit => unit.type == "DEFINITION_TITLE"));
+    assert(contents.matchesPred(unit => unit.type == 'DEFINITION_TITLE'));
     const rawTitle = contents.accept() as Leaf;
     assert(rawTitle.contents.length == 1);
 

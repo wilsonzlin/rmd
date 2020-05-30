@@ -1,10 +1,10 @@
-import {configurableSyntaxParser} from "../Configuration";
-import {Leaf} from "../../pp/Leaf";
-import {parseRichText, RichText} from "../text/RichText";
-import {Block} from "./Block";
-import {TextPosition} from "../../util/Position";
-import {Segment} from "../Segment";
-import {assert} from "../../err/InternalError";
+import {assert} from '../../err/InternalError';
+import {Leaf} from '../../pp/Leaf';
+import {TextPosition} from '../../util/Position';
+import {configurableSyntaxParser} from '../Configuration';
+import {Segment} from '../Segment';
+import {parseRichText, RichText} from '../text/RichText';
+import {Block} from './Block';
 
 export class Heading extends Block {
   readonly level: number;
@@ -20,14 +20,14 @@ export class Heading extends Block {
 }
 
 export const parseHeading = configurableSyntaxParser<Heading>(chunks => {
-  assert(chunks.matchesPred(unit => unit.type == "HEADING"));
+  assert(chunks.matchesPred(unit => unit.type == 'HEADING'));
   const raw = chunks.accept() as Leaf;
   assert(raw.contents.length == 1);
 
   const segment = Segment.fromLeaf(raw);
 
   let level = 0;
-  while (segment.peek() == "#") {
+  while (segment.peek() == '#') {
     segment.skip();
     level++;
   }
@@ -38,5 +38,5 @@ export const parseHeading = configurableSyntaxParser<Heading>(chunks => {
     parseRichText(segment),
   );
 }, {
-  id: val => typeof val == "string" && /^[a-zA-Z0-9-_]+$/.test(val),
+  id: val => typeof val == 'string' && /^[a-zA-Z0-9-_]+$/.test(val),
 });

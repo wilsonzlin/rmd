@@ -1,6 +1,6 @@
-import {SourceError} from "../err/SourceError";
-import {IPosition} from "./Position";
-import {assertReason} from "../err/InternalError";
+import {assertReason} from '../err/InternalError';
+import {SourceError} from '../err/SourceError';
+import {IPosition} from './Position';
 
 export interface Predicate<T> {
   (unit: T): boolean;
@@ -73,7 +73,7 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
   }
 
   skipAmount (len: number): number {
-    assertReason(this.hasRemaining(len), "Skip amount exceeds end of data");
+    assertReason(this.hasRemaining(len), 'Skip amount exceeds end of data');
     for (let i = 0; i < len; i++) {
       this.incrementNext();
     }
@@ -172,7 +172,7 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
 
   private assertNotEOD (str: U | null): U {
     if (str == Scanner.EOD) {
-      throw this.constructSourceError("Unexpected end of data");
+      throw this.constructSourceError('Unexpected end of data');
     }
     return str;
   }

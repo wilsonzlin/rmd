@@ -1,6 +1,6 @@
-import {IPosition} from "../util/Position";
-import {ParserAcceptingConfiguration} from "../parse/Configuration";
-import {Block} from "../parse/block/Block";
+import {Block} from '../parse/block/Block';
+import {ParserAcceptingConfiguration} from '../parse/Configuration';
+import {IPosition} from '../util/Position';
 
 export class SourceError extends Error {
   constructor (message: string, position: IPosition) {

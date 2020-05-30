@@ -1,13 +1,13 @@
-import {TextPosition} from "../util/Position";
+import {TextPosition} from '../util/Position';
 
 export type LeafType =
-  "CONFIGURATION"
-  | "PARAGRAPH"
-  | "TABLE"
-  | "CODE_BLOCK"
-  | "DEFINITION_TITLE"
-  | "SECTION_DELIMITER"
-  | "HEADING";
+  'CONFIGURATION'
+  | 'PARAGRAPH'
+  | 'TABLE'
+  | 'CODE_BLOCK'
+  | 'DEFINITION_TITLE'
+  | 'SECTION_DELIMITER'
+  | 'HEADING';
 
 export class Leaf {
   readonly position: TextPosition;

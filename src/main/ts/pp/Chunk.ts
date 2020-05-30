@@ -1,7 +1,7 @@
-import {Container} from "./Container";
-import {Leaf} from "./Leaf";
-import {Scanner} from "../util/Scanner";
-import {TextPosition} from "../util/Position";
+import {TextPosition} from '../util/Position';
+import {Scanner} from '../util/Scanner';
+import {Container} from './Container';
+import {Leaf} from './Leaf';
 
 export type Chunk = Container | Leaf;
 
