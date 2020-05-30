@@ -1,32 +1,34 @@
-import {preprocess} from "./pp/Preprocessor";
-import {Chunks} from "./pp/Chunk";
-import {Document, parseDocument} from "./parse/Document";
-import {Heading} from "./parse/block/Heading";
-import {Quote} from "./parse/block/Quote";
-import {Definition, Dictionary} from "./parse/block/Dictionary";
-import {Cell, Row, Table} from "./parse/block/Table";
-import {CodeBlock} from "./parse/block/CodeBlock";
-import {Section} from "./parse/block/Section";
-import {Paragraph} from "./parse/block/Paragraph";
-import {List, ListItem, Mode} from "./parse/block/List";
-import {Markup, RichText} from "./parse/text/RichText";
-import {Block} from "./parse/block/Block";
-import {assertionFailure} from "./err/InternalError";
-import {Configuration} from "./parse/Configuration";
+import {assertionFailure} from './err/InternalError';
+import {Block} from './parse/block/Block';
+import {CodeBlock} from './parse/block/CodeBlock';
+import {Definition, Dictionary} from './parse/block/Dictionary';
+import {Heading} from './parse/block/Heading';
+import {List, ListItem, Mode} from './parse/block/List';
+import {Paragraph} from './parse/block/Paragraph';
+import {Quote} from './parse/block/Quote';
+import {Section} from './parse/block/Section';
+import {Cell, Row, Table} from './parse/block/Table';
+import {Configuration} from './parse/Configuration';
+import {Document, parseDocument} from './parse/Document';
+import {Markup} from './parse/text/Markup';
+import {RichText} from './parse/text/RichText';
+import {Chunks} from './pp/Chunk';
+import {preprocess} from './pp/Preprocessor';
 
-export {Block} from "./parse/block/Block";
-export {CodeBlock} from "./parse/block/CodeBlock";
-export {Definition, Dictionary} from "./parse/block/Dictionary";
-export {Document} from "./parse/Document";
-export {Heading} from "./parse/block/Heading";
-export {List, ListItem, Mode} from "./parse/block/List";
-export {Paragraph} from "./parse/block/Paragraph";
-export {Quote} from "./parse/block/Quote";
-export {RichText, Markup, LinkMarkup, MarkupType} from "./parse/text/RichText";
-export {Section} from "./parse/block/Section";
-export {Table, Row, Cell} from "./parse/block/Table";
-export {Configuration} from "./parse/Configuration";
-export {TextPosition} from "./util/Position";
+export {Block} from './parse/block/Block';
+export {CodeBlock} from './parse/block/CodeBlock';
+export {Definition, Dictionary} from './parse/block/Dictionary';
+export {Document} from './parse/Document';
+export {Heading} from './parse/block/Heading';
+export {List, ListItem, Mode} from './parse/block/List';
+export {Paragraph} from './parse/block/Paragraph';
+export {Quote} from './parse/block/Quote';
+export {Markup} from './parse/text/Markup';
+export {RichText} from './parse/text/RichText';
+export {Section} from './parse/block/Section';
+export {Table, Row, Cell} from './parse/block/Table';
+export {Configuration} from './parse/Configuration';
+export {TextPosition} from './util/Position';
 
 export const parse = (name: string, text: string): Document => {
   const preprocessed = preprocess(name, text);
@@ -100,66 +102,66 @@ export abstract class Renderer implements SyntaxWalker<string> {
 
   visitBlocks (st: Block[]): string {
     return this.renderBlocks(
-      st.map(s => this.visitBlock(s))
+      st.map(s => this.visitBlock(s)),
     );
   }
 
   visitCell (st: Cell): string {
     return this.renderCell(
       this.visitRichText(st.text),
-      st.heading
+      st.heading,
     );
   }
 
   visitCodeBlock (st: CodeBlock): string {
     return this.renderCodeBlock(
       st.lang,
-      st.data
+      st.data,
     );
   }
 
   visitDefinition (st: Definition): string {
     return this.renderDefinition(
       this.visitRichText(st.title),
-      this.visitBlocks(st.contents)
+      this.visitBlocks(st.contents),
     );
   }
 
   visitDictionary (st: Dictionary): string {
     return this.renderDictionary(
-      st.definitions.map(d => this.visitDefinition(d))
+      st.definitions.map(d => this.visitDefinition(d)),
     );
   }
 
   visitHeading (st: Heading): string {
     return this.renderHeading(
       st.level,
-      this.visitRichText(st.text)
+      this.visitRichText(st.text),
     );
   }
 
   visitList (st: List): string {
     return this.renderList(
       st.mode,
-      st.items.map(i => this.visitListItem(i))
+      st.items.map(i => this.visitListItem(i)),
     );
   }
 
   visitListItem (st: ListItem): string {
     return this.renderListItem(
-      this.visitBlocks(st.contents)
+      this.visitBlocks(st.contents),
     );
   }
 
   visitParagraph (st: Paragraph): string {
     return this.renderParagraph(
-      this.visitRichText(st.text)
+      this.visitRichText(st.text),
     );
   }
 
   visitQuote (st: Quote): string {
     return this.renderQuote(
-      this.visitBlocks(st.contents)
+      this.visitBlocks(st.contents),
     );
   }
 
@@ -170,7 +172,7 @@ export abstract class Renderer implements SyntaxWalker<string> {
   visitRow (st: Row): string {
     return this.renderRow(
       st.cells.map(c => this.visitCell(c)),
-      st.heading
+      st.heading,
     );
   }
 
@@ -178,14 +180,14 @@ export abstract class Renderer implements SyntaxWalker<string> {
     return this.renderSection(
       st.type,
       st.config,
-      st.contents
+      st.contents,
     );
   }
 
   visitTable (st: Table): string {
     return this.renderTable(
       st.head.map(r => this.visitRow(r)),
-      st.body.map(r => this.visitRow(r))
+      st.body.map(r => this.visitRow(r)),
     );
   }
 

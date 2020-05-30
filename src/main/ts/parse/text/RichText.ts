@@ -1,190 +1,132 @@
-import {Segment} from "../Segment";
-import {assert} from "../../err/InternalError";
-
-export type MarkupType =
-  "STRONG" |
-  "EMPHASIS" |
-  "STRIKETHROUGH" |
-  "UNDERLINE" |
-  "CODE" |
-  "TAG";
-
-export class Markup {
-  type: MarkupType;
-  start: number;
-  end: number;
-
-  constructor (type: MarkupType, start: number, end: number) {
-    this.type = type;
-    this.start = start;
-    this.end = end;
-  }
-}
-
-export class TagMarkup extends Markup {
-  readonly name: string;
-  readonly attributes: Map<string, boolean | number | string>;
-
-  constructor (start: number, end: number, name: string) {
-    super("TAG", start, end);
-    this.name = name;
-    this.attributes = new Map();
-  }
-}
+import {assert} from '../../err/InternalError';
+import {Stack} from '../../util/Stack';
+import {TrieNode} from '../../util/Trie';
+import {Segment} from '../Segment';
+import {parseCode} from './InlineCode';
+import {Markup, MarkupAttributes} from './Markup';
+import {parseTag} from './Tag';
 
 export type RichText = {
   raw: string;
   markup: Markup[];
 }
 
-const CODE_DELIMITERS = new Set(["^", "`"]);
+const enum MarkupToken {
+  BOLD,
+  ITALIC,
+  STRIKETHROUGH,
+  UNDERLINE,
+  OPENING_TAG,
+  CLOSING_TAG,
+  CODE,
+}
 
-const parseCode = (raw: Segment): Markup => {
-  let delimiter = raw.skip();
-  assert(CODE_DELIMITERS.has(delimiter));
-
-  while (raw.skipIf(delimiter[0])) {
-    delimiter += delimiter[0];
-  }
-
-  const start = raw.lastCollectedMarker() + 1;
-  while (!raw.matchesSequence(delimiter)) {
-    raw.accept();
-  }
-  const end = raw.lastCollectedMarker();
-
-  raw.requireSkipSequence(delimiter, "Inline code delimiter");
-
-  return new Markup("CODE", start, end);
+const TOKEN_AS_TYPE = {
+  [MarkupToken.BOLD]: 'b',
+  [MarkupToken.ITALIC]: 'i',
+  [MarkupToken.STRIKETHROUGH]: 's',
+  [MarkupToken.UNDERLINE]: 'u',
 };
 
-type TrieMatch = {
-  value: MarkupType;
-  length: number;
-} | null;
+const SYNTAX_TRIE = new TrieNode<MarkupToken>()
+  .add('**', MarkupToken.BOLD)
+  .add('*', MarkupToken.ITALIC)
+  .add('~', MarkupToken.STRIKETHROUGH)
+  .add('_', MarkupToken.UNDERLINE)
+  .add('[', MarkupToken.OPENING_TAG)
+  .add('[$]', MarkupToken.CLOSING_TAG)
+  .add('^', MarkupToken.CODE)
+  .add('$', MarkupToken.CODE);
 
-class TrieNode {
-  readonly children: { [char: string]: TrieNode } = {};
-  leaf: MarkupType | null = null;
-
-  add (entry: string, value: MarkupType): this {
-    if (!entry) {
-      assert(this.leaf == null);
-      this.leaf = value;
-    } else {
-      const char = entry[0];
-      this.children[char] = this.children[char] || new TrieNode();
-      this.children[char].add(entry.slice(1), value);
-    }
-    return this;
-  }
-
-  longestMatch (segment: Segment): TrieMatch {
-    let current: TrieNode = this;
-    let lastMatch: TrieMatch = null;
-    for (let offset = 0; segment.hasRemaining(offset + 1); offset++) {
-      current = current.children[segment.peekOffset(offset)];
-      if (!current) {
-        break;
-      }
-      if (current.leaf != null) {
-        lastMatch = {length: offset + 1, value: current.leaf};
-      }
-    }
-    return lastMatch;
-  }
-}
-
-const FORMATTING_TRIE = new TrieNode()
-  .add("**", "STRONG")
-  .add("*", "EMPHASIS")
-  .add("~", "STRIKETHROUGH")
-  .add("_", "UNDERLINE");
-
-class FormattingStack {
-  private readonly stack: Markup[] = [];
-
-  isEmpty (): boolean {
-    return !this.stack.length;
-  }
-
-  lastType (): MarkupType | null {
-    if (this.isEmpty()) {
-      return null;
-    }
-    return this.stack[this.stack.length - 1].type;
-  }
-
-  hasType (type: MarkupType): boolean {
-    return this.stack.some(f => f.type == type);
-  }
-
-  push (type: MarkupType, start: number): this {
-    // -1 is a valid end value.
-    this.stack.push({type, start, end: -2});
-    return this;
-  }
-
-  pop (): Markup {
-    assert(!this.isEmpty());
-    return this.stack.pop()!;
-  }
-}
-
-export const parseRichText = (raw: Segment, breakChars: string = ""): RichText => {
+export const parseRichText = (raw: Segment, breakChars: string = ''): RichText => {
   const markup: Markup[] = [];
+  const stack = new Stack<{
+    token: MarkupToken,
+    type: string,
+    start: number,
+    attributes: MarkupAttributes,
+  }>();
 
-  const formattingStack = new FormattingStack();
   while (!raw.atEnd()) {
-    const next = raw.peek();
-
-    if (breakChars.indexOf(next) > -1) {
+    if (breakChars.includes(raw.peek())) {
       break;
     }
 
-    const formattingMarkup = FORMATTING_TRIE.longestMatch(raw);
-    if (formattingMarkup != null) {
-      if (formattingStack.lastType() == formattingMarkup.value) {
-        const last = formattingStack.pop();
-        markup.push(new Markup(last.type, last.start, raw.lastCollectedMarker()));
-
-      } else if (formattingStack.hasType(formattingMarkup.value)) {
-        throw raw.constructSourceError("Can't nest or overlap formatting of the same type");
-
-      } else {
-        formattingStack.push(formattingMarkup.value, raw.lastCollectedMarker() + 1);
+    const token = SYNTAX_TRIE.longestMatch(raw);
+    if (token === null) {
+      // Regular character.
+      if (raw.peek() == '\\') {
+        raw.skip();
       }
-
-      raw.skipAmount(formattingMarkup.length);
+      raw.accept();
       continue;
     }
 
-    if (CODE_DELIMITERS.has(next)) {
+    switch (token.value) {
+    case MarkupToken.BOLD:
+    case MarkupToken.ITALIC:
+    case MarkupToken.STRIKETHROUGH:
+    case MarkupToken.UNDERLINE:
+      if (stack.last()?.token === token.value) {
+        const last = stack.pop();
+        markup.push(new Markup(last.type, last.start, raw.lastCollectedMarker(), last.attributes));
+      } else if (stack.some(p => p.token === token!.value)) {
+        throw raw.constructSourceError('Cannot nest or overlap formatting of the same type');
+      } else {
+        stack.push({
+          token: token.value,
+          type: TOKEN_AS_TYPE[token.value],
+          start: raw.lastCollectedMarker() + 1,
+          attributes: new Map(),
+        });
+      }
+      raw.skipAmount(token.length);
+      break;
+
+    case MarkupToken.OPENING_TAG:
+      const tag = parseTag(raw);
+      if (tag.selfClosing) {
+        markup.push(new Markup(
+          tag.tagName,
+          tag.start,
+          tag.start,
+          tag.attributes,
+        ));
+      } else {
+        stack.push({
+          token: token.value,
+          type: tag.tagName,
+          start: tag.start,
+          attributes: tag.attributes,
+        });
+      }
+      break;
+
+    case MarkupToken.CLOSING_TAG:
+      if (stack.last()?.token !== MarkupToken.OPENING_TAG) {
+        throw raw.constructSourceError('Closing tag does not match with opening tag');
+      }
+      const last = stack.pop();
+      markup.push(new Markup(last.type, last.start, raw.lastCollectedMarker(), last.attributes));
+      break;
+
+    case MarkupToken.CODE:
       markup.push(parseCode(raw));
-      continue;
-    }
+      break;
 
-    if (next == "[") {
-      // Tag.
-      // TODO
-      continue;
+    default:
+      assert(false);
     }
-
-    // Regular character.
-    if (next == "\\") {
-      raw.skip();
-    }
-    raw.accept();
   }
 
-  if (!formattingStack.isEmpty()) {
-    throw raw.constructSourceError(`No matching ${formattingStack.pop().type}`);
+  if (!stack.isEmpty()) {
+    throw raw.constructSourceError(`No matching ${stack.pop().type}`);
   }
 
   const accepted = raw.collected();
 
   return {
-    raw: accepted.join(""),
+    raw: accepted.join(''),
     markup: markup,
   };
 };

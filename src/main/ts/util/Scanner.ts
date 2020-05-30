@@ -92,22 +92,24 @@ export abstract class Scanner<U, P extends IPosition, S extends ArrayLike<U> = U
     return this.skipAmount(this.matchesSequence(match));
   }
 
-  skipWhile (pred: Predicate<U>): number {
-    let count = 0;
-    while (!this.atEnd() && pred(this.peek())) {
+  skipWhile (pred: Predicate<U>): U[] {
+    const skipped = [];
+    let peek;
+    while (!this.atEnd() && pred(peek = this.peek())) {
       this.incrementNext();
-      count++;
+      skipped.push(peek);
     }
-    return count;
+    return skipped;
   }
 
-  skipUntil (pred: Predicate<U>): number {
-    let count = 0;
-    while (!this.atEnd() && !pred(this.peek())) {
+  skipUntil (pred: Predicate<U>): U[] {
+    const skipped = [];
+    let peek;
+    while (!this.atEnd() && !pred(peek = this.peek())) {
       this.incrementNext();
-      count++;
+      skipped.push(peek);
     }
-    return count;
+    return skipped;
   }
 
   matchesUnit (unit: U): boolean {
