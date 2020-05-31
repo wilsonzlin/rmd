@@ -1,6 +1,6 @@
 {
   "name": "rmd-parse",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Parser for RMD, strict and extensible Markdown",
   "main": "dist/main.js",
   "files": [
