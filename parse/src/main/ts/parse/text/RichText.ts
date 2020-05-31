@@ -33,7 +33,7 @@ const SYNTAX_TRIE = new TrieNode<MarkupToken>()
   .add('[', MarkupToken.OPENING_TAG)
   .add(']', MarkupToken.CLOSING_TAG)
   .add('^', MarkupToken.CODE)
-  .add('$', MarkupToken.CODE);
+  .add('`', MarkupToken.CODE);
 
 export const parseRichText = (raw: Segment, breakChars: string = ''): RichText => {
   const markup: Markup[] = [];
