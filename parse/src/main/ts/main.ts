@@ -91,131 +91,182 @@ export const visitBlock = <R> (walker: SyntaxWalker<R>, st: Block): R => {
   }
 };
 
-export abstract class Renderer implements SyntaxWalker<string> {
-  processDocument (doc: Document): string {
-    return this.visitBlocks(doc.contents);
+type RendererWalkResult = Generator<string | Promise<string>, string, string>;
+
+// NOTE: Any changes to this class should be reflected in AsyncRenderer.
+export abstract class Renderer implements SyntaxWalker<RendererWalkResult> {
+  processDocumentSync (doc: Document): string {
+    const it = this.visitBlocks(doc.contents);
+    let nextValue = '';
+    while (true) {
+      const next = it.next(nextValue);
+      if (next.done) {
+        return next.value;
+      }
+      if (next.value instanceof Promise) {
+        throw new TypeError(`This renderer is asynchronous, but processDocumentSync was called`);
+      }
+      nextValue = next.value;
+    }
   }
 
-  visitBlock (st: Block): string {
-    return visitBlock(this, st);
+  async processDocumentAsync (doc: Document): Promise<string> {
+    const it = this.visitBlocks(doc.contents);
+    let nextValue = '';
+    while (true) {
+      const next = it.next(nextValue);
+      if (next.done) {
+        return next.value;
+      }
+      if (next.value instanceof Promise) {
+        try {
+          nextValue = await next.value;
+        } catch (e) {
+          throw e;
+        }
+      } else {
+        nextValue = next.value;
+      }
+    }
   }
 
-  visitBlocks (st: Block[]): string {
-    return this.renderBlocks(
-      st.map(s => this.visitBlock(s)),
-    );
+  * visitBlock (st: Block): RendererWalkResult {
+    return yield* visitBlock(this, st);
   }
 
-  visitCell (st: Cell): string {
-    return this.renderCell(
-      this.visitRichText(st.text),
+  * visitBlocks (st: Block[]): RendererWalkResult {
+    const renderedBlocks = [];
+    for (const s of st) {
+      renderedBlocks.push(yield* this.visitBlock(s));
+    }
+    return yield this.renderBlocks(renderedBlocks);
+  }
+
+  * visitCell (st: Cell) {
+    return yield this.renderCell(
+      yield* this.visitRichText(st.text),
       st.heading,
     );
   }
 
-  visitCodeBlock (st: CodeBlock): string {
-    return this.renderCodeBlock(
+  * visitCodeBlock (st: CodeBlock) {
+    return yield this.renderCodeBlock(
       st.lang,
       st.data,
     );
   }
 
-  visitDefinition (st: Definition): string {
-    return this.renderDefinition(
-      this.visitRichText(st.title),
-      this.visitBlocks(st.contents),
+  * visitDefinition (st: Definition) {
+    return yield this.renderDefinition(
+      yield* this.visitRichText(st.title),
+      yield* this.visitBlocks(st.contents),
     );
   }
 
-  visitDictionary (st: Dictionary): string {
-    return this.renderDictionary(
-      st.definitions.map(d => this.visitDefinition(d)),
-    );
+  * visitDictionary (st: Dictionary) {
+    const renderedDefinitions = [];
+    for (const d of st.definitions) {
+      renderedDefinitions.push(yield* this.visitDefinition(d));
+    }
+    return yield this.renderDictionary(renderedDefinitions);
   }
 
-  visitHeading (st: Heading): string {
-    return this.renderHeading(
+  * visitHeading (st: Heading) {
+    return yield this.renderHeading(
       st.level,
-      this.visitRichText(st.text),
+      yield* this.visitRichText(st.text),
     );
   }
 
-  visitList (st: List): string {
-    return this.renderList(
+  * visitList (st: List) {
+    const renderedItems = [];
+    for (const i of st.items) {
+      renderedItems.push(yield* this.visitListItem(i));
+    }
+    return yield this.renderList(
       st.mode,
-      st.items.map(i => this.visitListItem(i)),
+      renderedItems,
     );
   }
 
-  visitListItem (st: ListItem): string {
-    return this.renderListItem(
-      this.visitBlocks(st.contents),
+  * visitListItem (st: ListItem) {
+    return yield this.renderListItem(
+      yield* this.visitBlocks(st.contents),
     );
   }
 
-  visitParagraph (st: Paragraph): string {
-    return this.renderParagraph(
-      this.visitRichText(st.text),
+  * visitParagraph (st: Paragraph) {
+    return yield this.renderParagraph(
+      yield* this.visitRichText(st.text),
     );
   }
 
-  visitQuote (st: Quote): string {
-    return this.renderQuote(
-      this.visitBlocks(st.contents),
+  * visitQuote (st: Quote) {
+    return yield this.renderQuote(
+      yield* this.visitBlocks(st.contents),
     );
   }
 
-  visitRichText (st: RichText): string {
-    return this.renderRichText(st.raw, st.markup);
+  * visitRichText (st: RichText) {
+    return yield this.renderRichText(st.raw, st.markup);
   }
 
-  visitRow (st: Row): string {
-    return this.renderRow(
-      st.cells.map(c => this.visitCell(c)),
+  * visitRow (st: Row) {
+    const renderedCells = [];
+    for (const c of st.cells) {
+      renderedCells.push(yield* this.visitCell(c));
+    }
+    return yield this.renderRow(
+      renderedCells,
       st.heading,
     );
   }
 
-  visitSection (st: Section): string {
-    return this.renderSection(
+  * visitSection (st: Section) {
+    return yield this.renderSection(
       st.type,
       st.config,
       st.contents,
     );
   }
 
-  visitTable (st: Table): string {
-    return this.renderTable(
-      st.head.map(r => this.visitRow(r)),
-      st.body.map(r => this.visitRow(r)),
-    );
+  * visitTable (st: Table) {
+    const renderedHead = [];
+    for (const r of st.head) {
+      renderedHead.push(yield* this.visitRow(r));
+    }
+    const renderedBody = [];
+    for (const r of st.body) {
+      renderedBody.push(yield* this.visitRow(r));
+    }
+    return yield this.renderTable(renderedHead, renderedBody);
   }
 
-  protected abstract renderBlocks (renderedBlocks: string[]): string;
+  protected abstract renderBlocks (renderedBlocks: string[]): string | Promise<string>;
 
-  protected abstract renderCell (renderedText: string, heading: boolean): string;
+  protected abstract renderCell (renderedText: string, heading: boolean): string | Promise<string>;
 
-  protected abstract renderCodeBlock (lang: string | null, rawData: string): string;
+  protected abstract renderCodeBlock (lang: string | null, rawData: string): string | Promise<string>;
 
-  protected abstract renderDefinition (renderedTitle: string, renderedContents: string): string;
+  protected abstract renderDefinition (renderedTitle: string, renderedContents: string): string | Promise<string>;
 
-  protected abstract renderDictionary (renderedDefinitions: string[]): string;
+  protected abstract renderDictionary (renderedDefinitions: string[]): string | Promise<string>;
 
-  protected abstract renderHeading (level: number, renderedText: string): string;
+  protected abstract renderHeading (level: number, renderedText: string): string | Promise<string>;
 
-  protected abstract renderList (mode: Mode, renderedItems: string[]): string;
+  protected abstract renderList (mode: Mode, renderedItems: string[]): string | Promise<string>;
 
-  protected abstract renderListItem (renderedContents: string): string;
+  protected abstract renderListItem (renderedContents: string): string | Promise<string>;
 
-  protected abstract renderParagraph (renderedText: string): string;
+  protected abstract renderParagraph (renderedText: string): string | Promise<string>;
 
-  protected abstract renderQuote (renderedContents: string): string;
+  protected abstract renderQuote (renderedContents: string): string | Promise<string>;
 
-  protected abstract renderRichText (raw: string, markup: Markup[]): string;
+  protected abstract renderRichText (raw: string, markup: Markup[]): string | Promise<string>;
 
-  protected abstract renderRow (renderedCells: string[], heading: boolean): string;
+  protected abstract renderRow (renderedCells: string[], heading: boolean): string | Promise<string>;
 
-  protected abstract renderSection (type: string, cfg: Configuration, rawContents: Block[]): string;
+  protected abstract renderSection (type: string, cfg: Configuration, rawContents: Block[]): string | Promise<string>;
 
-  protected abstract renderTable (renderedHead: string[], renderedBody: string[]): string;
+  protected abstract renderTable (renderedHead: string[], renderedBody: string[]): string | Promise<string>;
 }

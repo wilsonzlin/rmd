@@ -50,7 +50,7 @@ process.exit((args => {
 
   let output: string;
   try {
-    output = new HTMLRenderer().processDocument(document);
+    output = new HTMLRenderer().processDocumentSync(document);
   } catch (err) {
     return error(`Failed to render document with error:`, CLI_ERROR.DOC_RENDER, err, true);
   }
