@@ -12,13 +12,13 @@ export type RichText = {
 }
 
 const enum MarkupToken {
-  BOLD,
-  ITALIC,
-  STRIKETHROUGH,
-  UNDERLINE,
-  OPENING_TAG,
-  CLOSING_TAG,
-  CODE,
+  BOLD = 'bold',
+  ITALIC = 'italic',
+  STRIKETHROUGH = 'strikethrough',
+  UNDERLINE = 'underline',
+  OPENING_TAG = 'opening tag',
+  CLOSING_TAG = 'closing tag',
+  CODE = 'code',
 }
 
 const TOKEN_AS_TYPE = {
@@ -104,11 +104,15 @@ export const parseRichText = (raw: Segment, breakChars: string = ''): RichText =
       break;
 
     case MarkupToken.CLOSING_TAG:
-      if (stack.peek()?.token !== MarkupToken.OPENING_TAG) {
-        throw raw.constructSourceError('Closing tag does not match with opening tag');
+      if (stack.isEmpty()) {
+        throw raw.constructSourceError('No tag to close');
+      }
+      if (stack.peek()!.token !== MarkupToken.OPENING_TAG) {
+        throw raw.constructSourceError(`Attempted to close tag containing an unfinished ${stack.peek()!.token}`);
       }
       const last = stack.pop();
       markup.push(new Markup(last.type, last.start, raw.lastCollectedMarker(), last.attributes));
+      assert(raw.skip() === ']');
       break;
 
     case MarkupToken.CODE:

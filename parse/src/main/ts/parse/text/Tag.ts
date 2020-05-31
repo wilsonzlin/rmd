@@ -4,12 +4,13 @@ import {MarkupAttributes} from './Markup';
 
 const TAG_NAME_CHAR = /^[a-zA-Z-]$/;
 const ATTR_NAME_CHAR = /^[a-zA-Z-]$/;
-const WHITESPACE_CHAR = /^\w$/;
+const WHITESPACE_CHAR = /^\s$/;
+const UNQUOTED_END_CHAR = /^[\s:\]]$/;
 
 const parseUnquotedAttrVal = (raw: Segment): string => {
   const valueChars = [];
   let next;
-  while (!WHITESPACE_CHAR.test(next = raw.peek())) {
+  while (!UNQUOTED_END_CHAR.test(next = raw.peek())) {
     if (next === '\\') {
       raw.skip();
     }
@@ -44,8 +45,12 @@ export const parseTag = (raw: Segment): {
   const tagName = raw.skipWhile(c => TAG_NAME_CHAR.test(c)).join('');
   const attributes: MarkupAttributes = new Map();
   let selfClosing = false;
-  while (raw.peek() !== ':') {
+  while (true) {
     raw.skipWhile(c => WHITESPACE_CHAR.test(c));
+
+    if (raw.peek() === ':') {
+      break;
+    }
 
     if (raw.peek() === ']') {
       // Self closing.
