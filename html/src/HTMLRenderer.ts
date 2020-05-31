@@ -4,8 +4,8 @@ import * as rmd from 'rmd-parse';
 
 const encoder = new AllHtmlEntities();
 
-export type SectionHandler = (renderer: HTMLRenderer, cfg: rmd.Configuration, contents: rmd.Block[]) => string;
-export type LanguageHandler = (renderer: HTMLRenderer, code: string) => string;
+export type SectionHandler = (renderer: HTMLRenderer, cfg: rmd.Configuration, contents: rmd.Block[]) => string | Promise<string>;
+export type LanguageHandler = (renderer: HTMLRenderer, code: string) => string | Promise<string>;
 
 const computeIfAbsent = <K, V> (map: Map<K, V>, key: K, producer: (key: K) => V): V => {
   if (!map.has(key)) {
@@ -32,8 +32,8 @@ const tagAttrsHtml = (attributes: rmd.Markup['attributes']): string => {
 };
 
 export class HTMLRenderer extends rmd.Renderer {
-  readonly sectionHandlers = new Map<string, SectionHandler>();
-  readonly languageHandlers = new Map<string, LanguageHandler>();
+  private readonly sectionHandlers = new Map<string, SectionHandler>();
+  private readonly languageHandlers = new Map<string, LanguageHandler>();
 
   addSectionHandler (type: string, handler: SectionHandler): this {
     if (this.sectionHandlers.has(type)) {
@@ -55,7 +55,7 @@ export class HTMLRenderer extends rmd.Renderer {
     return renderedBlocks.join('');
   }
 
-  renderCodeBlock (lang: string | null, rawData: string): string {
+  renderCodeBlock (lang: string | null, rawData: string): string | Promise<string> {
     if (lang != null) {
       const handler = this.languageHandlers.get(lang);
       if (handler) {
@@ -150,7 +150,7 @@ export class HTMLRenderer extends rmd.Renderer {
     return split.join('');
   }
 
-  renderSection (type: string, cfg: rmd.Configuration, rawContents: rmd.Block[]): string {
+  renderSection (type: string, cfg: rmd.Configuration, rawContents: rmd.Block[]): string | Promise<string> {
     const handler = this.sectionHandlers.get(type);
     if (!handler) {
       throw new TypeError(`No handler for section type "${type}" provided`);
