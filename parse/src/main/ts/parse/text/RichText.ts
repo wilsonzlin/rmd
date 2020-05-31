@@ -34,7 +34,7 @@ const SYNTAX_TRIE = new TrieNode<MarkupToken>()
   .add('~', MarkupToken.STRIKETHROUGH)
   .add('_', MarkupToken.UNDERLINE)
   .add('[', MarkupToken.OPENING_TAG)
-  .add('[$]', MarkupToken.CLOSING_TAG)
+  .add(']', MarkupToken.CLOSING_TAG)
   .add('^', MarkupToken.CODE)
   .add('$', MarkupToken.CODE);
 

@@ -1,4 +1,4 @@
-export type MarkupAttributes = Map<string, boolean | number | string>;
+export type MarkupAttributes = Map<string, boolean | string>;
 
 export class Markup {
   constructor (

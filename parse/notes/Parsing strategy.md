@@ -123,8 +123,8 @@ Any block can have an anchor ID, allowing the use of anchor links which jump to 
 #### Heading
 
 ```ms
-[link head="Section A"]section A[$]
-[link head="Section A" $]
+[l head="Section A"]section A[]
+[l head="Section A" $]
 ```
 
 The title will be the text content of the heading, excluding any stricken text.
@@ -133,7 +133,7 @@ If self-closing, the label will be the content of the title, including any forma
 #### Anchor
 
 ```ms
-[link id="a"]read more in the relevant section[$]
+[l id=a: read more in the relevant section]
 ```
 
 The title will be the name of the referred block if available.
@@ -142,8 +142,8 @@ If self-closing, the label will be the name of the referred block. It's an error
 #### Footnote
 
 ```ms
-[link foot="footid"]details[$]
-[link foot="footid" $]
+[l foot=footid: details]
+[l foot=footid]
 ```
 
 The title will be the footnote's text, excluding any stricken text, truncated with ellipsis if too long.
@@ -152,8 +152,8 @@ If self-closing, the label will be the ordinal of the footnote in superscript an
 #### Article
 
 ```ms
-[link art="Another article"]click here to find out more[$]
-[link art="Another article" $]
+[l art="Another article": click here to find out more]
+[l art="Another article"]
 ```
 
 The title will be the article's description.
@@ -162,15 +162,15 @@ If self-closing, the label will be the name of the article.
 #### Email
 
 ```ms
-[link mail="hello@goodbye.com" title="No spam please" $]
-[link mail="hello@goodbye.com" title="No spam please"]send me an email[$]
+[l mail=hello@goodbye.com title="No spam please"]
+[l mail=hello@goodbye.com title="No spam please": send me an email]
 ```
 
 #### External
 
 ```ms
-[link ext="https://google.com" title="Google" $]
-[link ext="https://google.com" title="Google"]search engine[$]
+[l ext="https://google.com" title=Google]
+[l ext="https://google.com" title=Google: search engine]
 ```
 
 By default, all external links open in a new window or tab.
