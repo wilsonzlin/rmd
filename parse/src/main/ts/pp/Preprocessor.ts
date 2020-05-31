@@ -354,10 +354,6 @@ export const preprocess = (name: string, code: string): Container => {
       // Code block.
       currentCodeBlockDelimiter = '`'.repeat(lines.beginningRepetitionsOf('`'));
       const lang = lines.removeLeft(currentCodeBlockDelimiter.length).get().trim();
-      if (!lines.hasNext()) {
-        throw lines.error('Document ends inside code block');
-      }
-      assert(lines.next());
       lines.startLeaf('CODE_BLOCK', ['lang', lang]);
 
     } else if (lines.firstChar() == '|') {
