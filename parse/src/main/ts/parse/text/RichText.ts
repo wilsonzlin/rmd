@@ -15,7 +15,6 @@ const enum MarkupToken {
   BOLD = 'bold',
   ITALIC = 'italic',
   STRIKETHROUGH = 'strikethrough',
-  UNDERLINE = 'underline',
   OPENING_TAG = 'opening tag',
   CLOSING_TAG = 'closing tag',
   CODE = 'code',
@@ -25,14 +24,12 @@ const TOKEN_AS_TYPE = {
   [MarkupToken.BOLD]: 'b',
   [MarkupToken.ITALIC]: 'i',
   [MarkupToken.STRIKETHROUGH]: 's',
-  [MarkupToken.UNDERLINE]: 'u',
 };
 
 const SYNTAX_TRIE = new TrieNode<MarkupToken>()
   .add('**', MarkupToken.BOLD)
   .add('*', MarkupToken.ITALIC)
-  .add('~', MarkupToken.STRIKETHROUGH)
-  .add('_', MarkupToken.UNDERLINE)
+  .add('~~', MarkupToken.STRIKETHROUGH)
   .add('[', MarkupToken.OPENING_TAG)
   .add(']', MarkupToken.CLOSING_TAG)
   .add('^', MarkupToken.CODE)
@@ -66,7 +63,6 @@ export const parseRichText = (raw: Segment, breakChars: string = ''): RichText =
     case MarkupToken.BOLD:
     case MarkupToken.ITALIC:
     case MarkupToken.STRIKETHROUGH:
-    case MarkupToken.UNDERLINE:
       if (stack.peek()?.token === token.value) {
         const last = stack.pop();
         markup.push(new Markup(last.type, last.start, raw.lastCollectedMarker(), last.attributes));
