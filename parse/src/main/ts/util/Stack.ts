@@ -7,7 +7,7 @@ export class Stack<V> {
     return !this.stack.length;
   }
 
-  last (): V | null {
+  peek (): V | null {
     if (this.isEmpty()) {
       return null;
     }

@@ -67,7 +67,7 @@ export const parseRichText = (raw: Segment, breakChars: string = ''): RichText =
     case MarkupToken.ITALIC:
     case MarkupToken.STRIKETHROUGH:
     case MarkupToken.UNDERLINE:
-      if (stack.last()?.token === token.value) {
+      if (stack.peek()?.token === token.value) {
         const last = stack.pop();
         markup.push(new Markup(last.type, last.start, raw.lastCollectedMarker(), last.attributes));
       } else if (stack.some(p => p.token === token!.value)) {
@@ -104,7 +104,7 @@ export const parseRichText = (raw: Segment, breakChars: string = ''): RichText =
       break;
 
     case MarkupToken.CLOSING_TAG:
-      if (stack.last()?.token !== MarkupToken.OPENING_TAG) {
+      if (stack.peek()?.token !== MarkupToken.OPENING_TAG) {
         throw raw.constructSourceError('Closing tag does not match with opening tag');
       }
       const last = stack.pop();
