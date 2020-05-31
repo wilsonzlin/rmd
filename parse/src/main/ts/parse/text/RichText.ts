@@ -1,6 +1,7 @@
 import {assert} from '../../err/InternalError';
 import {Stack} from '../../util/Stack';
 import {TrieNode} from '../../util/Trie';
+import {ID_CHARS} from '../Configuration';
 import {Segment} from '../Segment';
 import {parseCode} from './InlineCode';
 import {Markup, MarkupAttributes} from './Markup';
@@ -15,6 +16,7 @@ const enum MarkupToken {
   BOLD = 'bold',
   ITALIC = 'italic',
   STRIKETHROUGH = 'strikethrough',
+  EMBEDDED_BLOCK = 'embedded block',
   OPENING_TAG = 'opening tag',
   CLOSING_TAG = 'closing tag',
   CODE = 'code',
@@ -30,6 +32,7 @@ const SYNTAX_TRIE = new TrieNode<MarkupToken>()
   .add('**', MarkupToken.BOLD)
   .add('*', MarkupToken.ITALIC)
   .add('~~', MarkupToken.STRIKETHROUGH)
+  .add('${', MarkupToken.EMBEDDED_BLOCK)
   .add('[', MarkupToken.OPENING_TAG)
   .add(']', MarkupToken.CLOSING_TAG)
   .add('^', MarkupToken.CODE)
@@ -113,6 +116,18 @@ export const parseRichText = (raw: Segment, breakChars: string = ''): RichText =
 
     case MarkupToken.CODE:
       markup.push(parseCode(raw));
+      break;
+
+    case MarkupToken.EMBEDDED_BLOCK:
+      assert(raw.skipIfMatches('${') > 0);
+      const id = raw.skipWhile(c => ID_CHARS.test(c)).join('');
+      raw.requireSkipSequence('}', 'closing embedded reference');
+      markup.push({
+        type: 'embedded',
+        start: raw.lastCollectedMarker() + 1,
+        end: raw.lastCollectedMarker(),
+        attributes: new Map([['id', id]]),
+      });
       break;
 
     default:

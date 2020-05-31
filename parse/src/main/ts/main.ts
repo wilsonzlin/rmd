@@ -42,7 +42,7 @@ export const parse = (name: string, text: string): Document => {
  * `visitBlocks` is omitted as the return type might be different and it's easier to leave it to the implementer.
  */
 export interface SyntaxWalker<R> {
-  visitCell (st: Cell): R;
+  visitCell (st: Cell, heading: boolean): R;
 
   visitCodeBlock (st: CodeBlock): R;
 
@@ -62,7 +62,7 @@ export interface SyntaxWalker<R> {
 
   visitRichText (st: RichText): R;
 
-  visitRow (st: Row): R;
+  visitRow (st: Row, heading: boolean): R;
 
   visitSection (st: Section): R;
 
@@ -139,28 +139,29 @@ export abstract class Renderer implements SyntaxWalker<RendererWalkResult> {
     for (const s of st) {
       renderedBlocks.push(yield* this.visitBlock(s));
     }
-    return yield this.renderBlocks(renderedBlocks);
+    return yield this.renderBlocks({renderedBlocks});
   }
 
-  * visitCell (st: Cell) {
-    return yield this.renderCell(
-      yield* this.visitRichText(st.text),
-      st.heading,
-    );
+  * visitCell (st: Cell, heading: boolean) {
+    return yield this.renderCell({
+      renderedText: yield* this.visitRichText(st.text),
+      heading,
+    });
   }
 
   * visitCodeBlock (st: CodeBlock) {
-    return yield this.renderCodeBlock(
-      st.lang,
-      st.data,
-    );
+    return yield this.renderCodeBlock({
+      id: st.id,
+      lang: st.lang,
+      rawData: st.data,
+    });
   }
 
   * visitDefinition (st: Definition) {
-    return yield this.renderDefinition(
-      yield* this.visitRichText(st.title),
-      yield* this.visitBlocks(st.contents),
-    );
+    return yield this.renderDefinition({
+      renderedTitle: yield* this.visitRichText(st.title),
+      renderedContents: yield* this.visitBlocks(st.contents),
+    });
   }
 
   * visitDictionary (st: Dictionary) {
@@ -168,14 +169,18 @@ export abstract class Renderer implements SyntaxWalker<RendererWalkResult> {
     for (const d of st.definitions) {
       renderedDefinitions.push(yield* this.visitDefinition(d));
     }
-    return yield this.renderDictionary(renderedDefinitions);
+    return yield this.renderDictionary({
+      id: st.id,
+      renderedDefinitions,
+    });
   }
 
   * visitHeading (st: Heading) {
-    return yield this.renderHeading(
-      st.level,
-      yield* this.visitRichText(st.text),
-    );
+    return yield this.renderHeading({
+      id: st.id,
+      level: st.level,
+      renderedText: yield* this.visitRichText(st.text),
+    });
   }
 
   * visitList (st: List) {
@@ -183,90 +188,99 @@ export abstract class Renderer implements SyntaxWalker<RendererWalkResult> {
     for (const i of st.items) {
       renderedItems.push(yield* this.visitListItem(i));
     }
-    return yield this.renderList(
-      st.mode,
+    return yield this.renderList({
+      id: st.id,
+      mode: st.mode,
       renderedItems,
-    );
+    });
   }
 
   * visitListItem (st: ListItem) {
-    return yield this.renderListItem(
-      yield* this.visitBlocks(st.contents),
-    );
+    return yield this.renderListItem({
+      id: undefined, // TODO
+      renderedContents: yield* this.visitBlocks(st.contents),
+    });
   }
 
   * visitParagraph (st: Paragraph) {
-    return yield this.renderParagraph(
-      yield* this.visitRichText(st.text),
-    );
+    return yield this.renderParagraph({
+      id: st.id,
+      renderedText: yield* this.visitRichText(st.text),
+    });
   }
 
   * visitQuote (st: Quote) {
-    return yield this.renderQuote(
-      yield* this.visitBlocks(st.contents),
-    );
+    return yield this.renderQuote({
+      id: st.id,
+      renderedContents: yield* this.visitBlocks(st.contents),
+    });
   }
 
   * visitRichText (st: RichText) {
-    return yield this.renderRichText(st.raw, st.markup);
+    return yield this.renderRichText({raw: st.raw, markup: st.markup});
   }
 
-  * visitRow (st: Row) {
+  * visitRow (st: Row, heading: boolean) {
     const renderedCells = [];
     for (const c of st.cells) {
-      renderedCells.push(yield* this.visitCell(c));
+      renderedCells.push(yield* this.visitCell(c, heading));
     }
-    return yield this.renderRow(
+    return yield this.renderRow({
       renderedCells,
-      st.heading,
-    );
+      heading,
+    });
   }
 
   * visitSection (st: Section) {
-    return yield this.renderSection(
-      st.type,
-      st.config,
-      st.contents,
-    );
+    return yield this.renderSection({
+      id: st.id,
+      type: st.type,
+      cfg: st.config,
+      rawContents: st.contents,
+    });
   }
 
   * visitTable (st: Table) {
     const renderedHead = [];
     for (const r of st.head) {
-      renderedHead.push(yield* this.visitRow(r));
+      renderedHead.push(yield* this.visitRow(r, true));
     }
     const renderedBody = [];
     for (const r of st.body) {
-      renderedBody.push(yield* this.visitRow(r));
+      renderedBody.push(yield* this.visitRow(r, false));
     }
-    return yield this.renderTable(renderedHead, renderedBody);
+    return yield this.renderTable({
+      id: st.id,
+      renderedHead,
+      renderedBody,
+    });
   }
 
-  protected abstract renderBlocks (renderedBlocks: string[]): string | Promise<string>;
+  protected abstract renderBlocks (props: { renderedBlocks: string[] }): string | Promise<string>;
 
-  protected abstract renderCell (renderedText: string, heading: boolean): string | Promise<string>;
+  protected abstract renderCell (props: { renderedText: string, heading: boolean }): string | Promise<string>;
 
-  protected abstract renderCodeBlock (lang: string | null, rawData: string): string | Promise<string>;
+  protected abstract renderCodeBlock (props: { id?: string; lang: string | null, rawData: string }): string | Promise<string>;
 
-  protected abstract renderDefinition (renderedTitle: string, renderedContents: string): string | Promise<string>;
+  protected abstract renderDefinition (props: { renderedTitle: string, renderedContents: string }): string | Promise<string>;
 
-  protected abstract renderDictionary (renderedDefinitions: string[]): string | Promise<string>;
+  protected abstract renderDictionary (props: { id?: string; renderedDefinitions: string[] }): string | Promise<string>;
 
-  protected abstract renderHeading (level: number, renderedText: string): string | Promise<string>;
+  protected abstract renderHeading (props: { id?: string; level: number, renderedText: string }): string | Promise<string>;
 
-  protected abstract renderList (mode: Mode, renderedItems: string[]): string | Promise<string>;
+  protected abstract renderList (props: { id?: string; mode: Mode, renderedItems: string[] }): string | Promise<string>;
 
-  protected abstract renderListItem (renderedContents: string): string | Promise<string>;
+  protected abstract renderListItem (props: { id?: string; renderedContents: string }): string | Promise<string>;
 
-  protected abstract renderParagraph (renderedText: string): string | Promise<string>;
+  protected abstract renderParagraph (props: { id?: string; renderedText: string }): string | Promise<string>;
 
-  protected abstract renderQuote (renderedContents: string): string | Promise<string>;
+  protected abstract renderQuote (props: { id?: string; renderedContents: string }): string | Promise<string>;
 
-  protected abstract renderRichText (raw: string, markup: Markup[]): string | Promise<string>;
+  protected abstract renderRichText (props: { raw: string, markup: Markup[] }): string | Promise<string>;
 
-  protected abstract renderRow (renderedCells: string[], heading: boolean): string | Promise<string>;
+  protected abstract renderRow (props: { renderedCells: string[], heading: boolean }): string | Promise<string>;
 
-  protected abstract renderSection (type: string, cfg: Configuration, rawContents: Block[]): string | Promise<string>;
+  protected abstract renderSection (props: { id?: string; type: string, cfg: Configuration, rawContents: Block[] }): string | Promise<string>;
 
-  protected abstract renderTable (renderedHead: string[], renderedBody: string[]): string | Promise<string>;
+  protected abstract renderTable (props: { id?: string; renderedHead: string[], renderedBody: string[] }): string | Promise<string>;
 }

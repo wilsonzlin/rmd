@@ -9,12 +9,10 @@ import {registerBlockParser} from './Parsers';
 
 export type Cell = {
   text: RichText;
-  heading: boolean;
 };
 
 export type Row = {
   cells: Cell[];
-  heading: boolean;
 };
 
 export class Table extends Block {
@@ -36,11 +34,10 @@ export const parseTable = configurableSyntaxParser(chunks => {
   const body: Row[] = [];
 
   const raw = Segment.fromLeaf(rawTable);
-  raw.requireUnit('|');
+  raw.requireSkipSequence('|', 'Table row initial bar');
 
   let headPassed = false;
   let cells: Cell[] = [];
-  let expectedCells = -1;
   while (!raw.atEnd()) {
     // WARNING: This does not work if last line is separator and file doesn't have line terminator at end.
     if (raw.skipIfMatches('---|\n')) {
@@ -49,35 +46,19 @@ export const parseTable = configurableSyntaxParser(chunks => {
         throw raw.constructSourceError('Table head separator already exists');
       }
       headPassed = true;
-      while (body.length) {
-        const row = body.shift()!;
-        head.push({
-          ...row,
-          cells: row.cells.map(cell => ({
-            ...cell,
-            heading: true,
-          })),
-          heading: true,
-        });
-      }
-    } else if (raw.peek() === '\n') {
-      raw.skip();
-      if (expectedCells == -1) {
-        expectedCells = cells.length;
-      } else if (cells.length != expectedCells) {
-        throw raw.constructSourceError(`Expected ${expectedCells} cells, got ${cells.length}`);
-      }
-      body.push({cells: cells, heading: false});
+      head.push(...body.splice(0, body.length));
+    } else if (raw.skipIf('\n')) {
+      // End of row.
+      body.push({cells});
       cells = [];
     } else {
-      cells.push({text: parseRichText(raw.emptyCollected(), '|\n'), heading: false});
+      // Discard text from previous cell.
+      raw.emptyCollected();
+      cells.push({text: parseRichText(raw, '|\n')});
     }
-    raw.requireUnit('|');
+    raw.requireSkipSequence('|', 'Table cell bar');
   }
-  if (expectedCells != -1 && cells.length != expectedCells) {
-    throw raw.constructSourceError(`Expected ${expectedCells} cells, got ${cells.length}`);
-  }
-  body.push({cells: cells, heading: false});
+  body.push({cells});
 
   assert(head.length + body.length > 0);
 

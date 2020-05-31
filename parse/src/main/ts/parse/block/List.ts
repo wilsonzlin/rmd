@@ -11,6 +11,7 @@ export enum Mode {
   ORDERED, UNORDERED
 }
 
+// TODO Individual list item configuration.
 export type ListItem = {
   contents: Block[];
 }

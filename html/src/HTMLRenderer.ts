@@ -1,11 +1,13 @@
 import hljs from 'highlight.js';
 import {AllHtmlEntities} from 'html-entities';
 import * as rmd from 'rmd-parse';
+import {Block, Configuration, Markup, Mode} from 'rmd-parse';
 
 const encoder = new AllHtmlEntities();
+const toEntities = (raw: string) => encoder.encode(raw);
 
-export type SectionHandler = (renderer: HTMLRenderer, cfg: rmd.Configuration, contents: rmd.Block[]) => string | Promise<string>;
-export type LanguageHandler = (renderer: HTMLRenderer, code: string) => string | Promise<string>;
+export type SectionHandler = (props: { id?: string, renderer: HTMLRenderer, cfg: rmd.Configuration, contents: rmd.Block[] }) => string | Promise<string>;
+export type LanguageHandler = (props: { id?: string, renderer: HTMLRenderer, code: string }) => string | Promise<string>;
 
 const computeIfAbsent = <K, V> (map: Map<K, V>, key: K, producer: (key: K) => V): V => {
   if (!map.has(key)) {
@@ -27,7 +29,7 @@ const tagAttrsHtml = (attributes: rmd.Markup['attributes']): string => {
     ([name, value]) =>
       typeof value === 'boolean'
         ? value ? name : ''
-        : `${name}="${encoder.encode(`${value}`)}"`,
+        : `${name}="${toEntities(`${value}`)}"`,
   ).join(' ');
 };
 
@@ -51,55 +53,59 @@ export class HTMLRenderer extends rmd.Renderer {
     return this;
   }
 
-  renderBlocks (renderedBlocks: string[]): string {
+  renderBlocks ({renderedBlocks}: { renderedBlocks: string[] }): string {
     return renderedBlocks.join('');
   }
 
-  renderCodeBlock (lang: string | null, rawData: string): string | Promise<string> {
+  renderCodeBlock ({id, lang, rawData}: { id?: string; lang: string | null, rawData: string }): string | Promise<string> {
     if (lang != null) {
       const handler = this.languageHandlers.get(lang);
       if (handler) {
-        return handler(this, rawData);
+        return handler({
+          id,
+          renderer: this,
+          code: rawData,
+        });
       }
 
       if (hljs.getLanguage(lang)) {
-        return `<pre>${hljs.highlight(lang, rawData, true).value}</pre>`;
+        return `<pre ${id && `id="${toEntities(id)}"`}>${hljs.highlight(lang, rawData, true).value}</pre>`;
       }
     }
 
-    return `<pre>${rawData}</pre>`;
+    return `<pre ${id && `id="${toEntities(id)}"`}>${rawData}</pre>`;
   }
 
-  renderDefinition (renderedTitle: string, renderedContents: string): string {
+  renderDefinition ({renderedTitle, renderedContents}: { renderedTitle: string, renderedContents: string }): string {
     return `<dt>${renderedTitle}</dt><dd>${renderedContents}</dd>`;
   }
 
-  renderDictionary (renderedDefinitions: string[]): string {
-    return `<dl>${renderedDefinitions.join('')}</dl>`;
+  renderDictionary ({id, renderedDefinitions}: { id?: string; renderedDefinitions: string[] }): string {
+    return `<dl ${id && `id="${toEntities(id)}"`}>${renderedDefinitions.join('')}</dl>`;
   }
 
-  renderHeading (level: number, renderedText: string): string {
-    return `<h${level}>${renderedText}</h${level}>`;
+  renderHeading ({id, level, renderedText}: { id?: string; level: number, renderedText: string }): string {
+    return `<h${level} ${id && `id="${toEntities(id)}"`}>${renderedText}</h${level}>`;
   }
 
-  renderListItem (renderedContents: string): string {
-    return `<li>${renderedContents}</li>`;
+  renderListItem ({id, renderedContents}: { id?: string; renderedContents: string }): string {
+    return `<li ${id && `id="${toEntities(id)}"`}>${renderedContents}</li>`;
   }
 
-  renderList (mode: rmd.Mode, renderedItems: string[]): string {
+  renderList ({id, mode, renderedItems}: { id?: string; mode: Mode, renderedItems: string[] }): string {
     const tag = mode == rmd.Mode.ORDERED ? 'ol' : 'ul';
-    return `<${tag}>${renderedItems.join('')}</${tag}>`;
+    return `<${tag} ${id && `id="${toEntities(id)}"`}>${renderedItems.join('')}</${tag}>`;
   }
 
-  renderParagraph (renderedText: string): string {
-    return `<p>${renderedText}</p>`;
+  renderParagraph ({id, renderedText}: { id?: string; renderedText: string }): string {
+    return `<p ${id && `id="${toEntities(id)}"`}>${renderedText}</p>`;
   }
 
-  renderQuote (renderedContents: string): string {
-    return `<blockquote>${renderedContents}</blockquote>`;
+  renderQuote ({id, renderedContents}: { id?: string; renderedContents: string }): string {
+    return `<blockquote ${id && `id="${toEntities(id)}"`}>${renderedContents}</blockquote>`;
   }
 
-  renderRichText (raw: string, markup: rmd.Markup[]): string {
+  renderRichText ({raw, markup}: { raw: string, markup: Markup[] }): string {
     const starts = new Map<number, rmd.Markup[]>();
     const ends = new Map<number, rmd.Markup[]>();
     const voids = new Map<number, rmd.Markup[]>();
@@ -150,24 +156,29 @@ export class HTMLRenderer extends rmd.Renderer {
     return split.join('');
   }
 
-  renderSection (type: string, cfg: rmd.Configuration, rawContents: rmd.Block[]): string | Promise<string> {
+  renderSection ({id, type, cfg, rawContents}: { id?: string; type: string, cfg: Configuration, rawContents: Block[] }): string | Promise<string> {
     const handler = this.sectionHandlers.get(type);
     if (!handler) {
       throw new TypeError(`No handler for section type "${type}" provided`);
     }
-    return handler(this, cfg, rawContents);
+    return handler({
+      id,
+      renderer: this,
+      cfg,
+      contents: rawContents,
+    });
   }
 
-  renderRow (renderedCells: string[], _heading: boolean): string {
+  renderRow ({renderedCells}: { renderedCells: string[], heading: boolean }): string {
     return `<tr>${renderedCells.join('')}</tr>`;
   }
 
-  renderCell (renderedText: string, heading: boolean): string {
+  renderCell ({heading, renderedText}: { renderedText: string, heading: boolean }): string {
     const tag = heading ? 'th' : 'td';
     return `<${tag}>${renderedText}</${tag}>`;
   }
 
-  renderTable (renderedHead: string[], renderedBody: string[]): string {
-    return `<table><thead>${renderedHead.join('')}<tbody>${renderedBody.join('')}</table>`;
+  renderTable ({id, renderedHead, renderedBody}: { id?: string; renderedHead: string[], renderedBody: string[] }): string {
+    return `<table ${id && `id="${toEntities(id)}"`}><thead>${renderedHead.join('')}<tbody>${renderedBody.join('')}</table>`;
   }
 }

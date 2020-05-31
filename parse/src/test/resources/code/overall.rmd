@@ -50,7 +50,7 @@ paragraph of text paragraph of text paragraph of text paragraph of text paragrap
   >   - item in item
   >     > a
 
-{}
+{"id":"cb1"}
 `````code
 code block
 
@@ -73,7 +73,3 @@ code block
 |---|
 |Row|1|Cells|
 |Row|2|Cells|
-
-::: begin custom
-
-::: end custom

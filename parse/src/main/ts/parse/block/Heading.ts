@@ -1,7 +1,7 @@
 import {assert} from '../../err/InternalError';
 import {Leaf} from '../../pp/Leaf';
 import {TextPosition} from '../../util/Position';
-import {configurableSyntaxParser} from '../Configuration';
+import {configurableSyntaxParser, ID_CHARS} from '../Configuration';
 import {Segment} from '../Segment';
 import {parseRichText, RichText} from '../text/RichText';
 import {Block} from './Block';
@@ -38,8 +38,6 @@ export const parseHeading = configurableSyntaxParser<Heading>(chunks => {
     level,
     parseRichText(segment),
   );
-}, {
-  id: val => typeof val == 'string' && /^[a-zA-Z0-9-_]+$/.test(val),
-});
+}, {});
 
 registerBlockParser('HEADING', parseHeading);

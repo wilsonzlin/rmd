@@ -3,6 +3,8 @@ import {Chunks} from '../pp/Chunk';
 import {IPosition} from '../util/Position';
 import {Block} from './block/Block';
 
+export const ID_CHARS = /^[a-zA-Z0-9-_]+$/;
+
 export type Parser<B extends Block> = (chunks: Chunks) => B;
 export type ParserAcceptingConfiguration<B extends Block> = (chunks: Chunks, cfg: Configuration) => B;
 
@@ -16,16 +18,25 @@ export const configurableSyntaxParser = <B extends Block> (parser: Parser<B>, cf
     const result = parser(chunks);
 
     if (cfg != null) {
-      Object.keys(cfg.values).forEach(key => {
-        const val = cfg.values[key];
-        const schema = cfgSchema[key];
+      Object.entries(cfg.values).forEach(([key, val]) => {
+        // Some configuration keys are supported for all blocks.
+        // Other keys are custom and are defined in `cfgSchema`.
+        switch (key) {
+        case 'id':
+          if (!ID_CHARS.test(val)) {
+            throw new SourceError(`Invalid ID: ${val}`, cfg.position);
+          }
+          break;
 
-        if (!schema) {
-          throw new SourceError(`Configuration key "${key}" is not applicable`, cfg.position);
-        }
-
-        if (!schema(val)) {
-          throw new SourceError(`Configuration value of key "${key}" is invalid`, cfg.position);
+        default:
+          const schema = cfgSchema[key];
+          if (!schema) {
+            throw new SourceError(`Configuration key "${key}" is not applicable`, cfg.position);
+          }
+          if (!schema(val)) {
+            throw new SourceError(`Configuration value of key "${key}" is invalid`, cfg.position);
+          }
+          break;
         }
 
         result[key] = val;
