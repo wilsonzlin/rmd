@@ -57,7 +57,7 @@ export class HTMLRenderer extends rmd.Renderer {
     return renderedBlocks.join('');
   }
 
-  renderCodeBlock ({id, lang, rawData}: { id?: string; lang: string | null, rawData: string }): string | Promise<string> {
+  renderCodeBlock ({id = '', lang, rawData}: { id?: string; lang: string | null, rawData: string }): string | Promise<string> {
     if (lang != null) {
       const handler = this.languageHandlers.get(lang);
       if (handler) {
@@ -69,40 +69,40 @@ export class HTMLRenderer extends rmd.Renderer {
       }
 
       if (hljs.getLanguage(lang)) {
-        return `<pre ${id && `id="${toEntities(id)}"`}>${hljs.highlight(lang, rawData, true).value}</pre>`;
+        return `<pre id="${toEntities(id)}">${hljs.highlight(lang, rawData, true).value}</pre>`;
       }
     }
 
-    return `<pre ${id && `id="${toEntities(id)}"`}>${rawData}</pre>`;
+    return `<pre id="${toEntities(id)}">${rawData}</pre>`;
   }
 
   renderDefinition ({renderedTitle, renderedContents}: { renderedTitle: string, renderedContents: string }): string {
     return `<dt>${renderedTitle}</dt><dd>${renderedContents}</dd>`;
   }
 
-  renderDictionary ({id, renderedDefinitions}: { id?: string; renderedDefinitions: string[] }): string {
-    return `<dl ${id && `id="${toEntities(id)}"`}>${renderedDefinitions.join('')}</dl>`;
+  renderDictionary ({id = '', renderedDefinitions}: { id?: string; renderedDefinitions: string[] }): string {
+    return `<dl id="${toEntities(id)}">${renderedDefinitions.join('')}</dl>`;
   }
 
-  renderHeading ({id, level, renderedText}: { id?: string; level: number, renderedText: string }): string {
-    return `<h${level} ${id && `id="${toEntities(id)}"`}>${renderedText}</h${level}>`;
+  renderHeading ({id = '', level, renderedText}: { id?: string; level: number, renderedText: string }): string {
+    return `<h${level} id="${toEntities(id)}">${renderedText}</h${level}>`;
   }
 
-  renderListItem ({id, renderedContents}: { id?: string; renderedContents: string }): string {
-    return `<li ${id && `id="${toEntities(id)}"`}>${renderedContents}</li>`;
+  renderListItem ({id = '', renderedContents}: { id?: string; renderedContents: string }): string {
+    return `<li id="${toEntities(id)}">${renderedContents}</li>`;
   }
 
-  renderList ({id, mode, renderedItems}: { id?: string; mode: Mode, renderedItems: string[] }): string {
+  renderList ({id = '', mode, renderedItems}: { id?: string; mode: Mode, renderedItems: string[] }): string {
     const tag = mode == rmd.Mode.ORDERED ? 'ol' : 'ul';
-    return `<${tag} ${id && `id="${toEntities(id)}"`}>${renderedItems.join('')}</${tag}>`;
+    return `<${tag} id="${toEntities(id)}">${renderedItems.join('')}</${tag}>`;
   }
 
-  renderParagraph ({id, renderedText}: { id?: string; renderedText: string }): string {
-    return `<p ${id && `id="${toEntities(id)}"`}>${renderedText}</p>`;
+  renderParagraph ({id = '', renderedText}: { id?: string; renderedText: string }): string {
+    return `<p id="${toEntities(id)}">${renderedText}</p>`;
   }
 
-  renderQuote ({id, renderedContents}: { id?: string; renderedContents: string }): string {
-    return `<blockquote ${id && `id="${toEntities(id)}"`}>${renderedContents}</blockquote>`;
+  renderQuote ({id = '', renderedContents}: { id?: string; renderedContents: string }): string {
+    return `<blockquote $d="${toEntities(id)}">${renderedContents}</blockquote>`;
   }
 
   renderRichText ({raw, markup}: { raw: string, markup: Markup[] }): string {
@@ -156,7 +156,7 @@ export class HTMLRenderer extends rmd.Renderer {
     return split.join('');
   }
 
-  renderSection ({id, type, cfg, rawContents}: { id?: string; type: string, cfg: Configuration, rawContents: Block[] }): string | Promise<string> {
+  renderSection ({id = '', type, cfg, rawContents}: { id?: string; type: string, cfg: Configuration, rawContents: Block[] }): string | Promise<string> {
     const handler = this.sectionHandlers.get(type);
     if (!handler) {
       throw new TypeError(`No handler for section type "${type}" provided`);
@@ -178,7 +178,7 @@ export class HTMLRenderer extends rmd.Renderer {
     return `<${tag}>${renderedText}</${tag}>`;
   }
 
-  renderTable ({id, renderedHead, renderedBody}: { id?: string; renderedHead: string[], renderedBody: string[] }): string {
-    return `<table ${id && `id="${toEntities(id)}"`}><thead>${renderedHead.join('')}<tbody>${renderedBody.join('')}</table>`;
+  renderTable ({id = '', renderedHead, renderedBody}: { id?: string; renderedHead: string[], renderedBody: string[] }): string {
+    return `<table id="${toEntities(id)}"><thead>${renderedHead.join('')}<tbody>${renderedBody.join('')}</table>`;
   }
 }
