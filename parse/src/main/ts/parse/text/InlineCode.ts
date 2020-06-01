@@ -18,5 +18,5 @@ export const parseCode = (raw: Segment): Markup => {
 
   raw.requireSkipSequence(delimiter, 'Inline code delimiter');
 
-  return new Markup('CODE', start, end, new Map());
+  return new Markup('code', start, end, new Map());
 };
