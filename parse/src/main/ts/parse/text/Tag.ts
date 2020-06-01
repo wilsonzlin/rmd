@@ -14,7 +14,7 @@ const parseUnquotedAttrVal = (raw: Segment): string => {
     if (next === '\\') {
       raw.skip();
     }
-    valueChars.push(raw.accept());
+    valueChars.push(raw.skip());
   }
   return valueChars.join('');
 };
@@ -27,7 +27,7 @@ const parseQuotedAttrVal = (raw: Segment): string => {
     if (next === '\\') {
       raw.skip();
     }
-    valueChars.push(raw.accept());
+    valueChars.push(raw.skip());
   }
   assert(raw.skip() === '"');
   return valueChars.join('');
