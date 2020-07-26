@@ -1,12 +1,11 @@
 import hljs from 'highlight.js';
 import {AllHtmlEntities} from 'html-entities';
-import * as rmd from 'rmd-parse';
-import {Block, Configuration, Markup, Mode} from 'rmd-parse';
+import {Block, Configuration, Markup, Mode, Renderer} from 'rmd-parse';
 
 const encoder = new AllHtmlEntities();
 const toEntities = (raw: string) => encoder.encode(raw);
 
-export type SectionHandler = (props: { id?: string, renderer: HTMLRenderer, cfg: rmd.Configuration, contents: rmd.Block[] }) => string | Promise<string>;
+export type SectionHandler = (props: { id?: string, renderer: HTMLRenderer, cfg: Configuration, contents: Block[] }) => string | Promise<string>;
 export type LanguageHandler = (props: { id?: string, renderer: HTMLRenderer, code: string }) => string | Promise<string>;
 
 const computeIfAbsent = <K, V> (map: Map<K, V>, key: K, producer: (key: K) => V): V => {
@@ -23,7 +22,7 @@ const getOrDefault = <K, V> (map: Map<K, V>, key: K, def: V): V => {
   return def;
 };
 
-const tagAttrsHtml = (attributes: rmd.Markup['attributes']): string => {
+const tagAttrsHtml = (attributes: Markup['attributes']): string => {
   return Array.from(
     attributes.entries(),
     ([name, value]) =>
@@ -33,7 +32,7 @@ const tagAttrsHtml = (attributes: rmd.Markup['attributes']): string => {
   ).join(' ');
 };
 
-export class HTMLRenderer extends rmd.Renderer {
+export class HTMLRenderer extends Renderer {
   private readonly sectionHandlers = new Map<string, SectionHandler>();
   private readonly languageHandlers = new Map<string, LanguageHandler>();
 
@@ -106,9 +105,9 @@ export class HTMLRenderer extends rmd.Renderer {
   }
 
   renderRichText ({raw, markup}: { raw: string, markup: Markup[] }): string {
-    const starts = new Map<number, rmd.Markup[]>();
-    const ends = new Map<number, rmd.Markup[]>();
-    const voids = new Map<number, rmd.Markup[]>();
+    const starts = new Map<number, Markup[]>();
+    const ends = new Map<number, Markup[]>();
+    const voids = new Map<number, Markup[]>();
     const splits = new Set<number>();
 
     for (const m of markup) {
