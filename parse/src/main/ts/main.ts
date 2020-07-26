@@ -95,6 +95,14 @@ type RendererWalkResult = Generator<string | Promise<string>, string, string>;
 
 // NOTE: Any changes to this class should be reflected in AsyncRenderer.
 export abstract class Renderer implements SyntaxWalker<RendererWalkResult> {
+  readonly baseHeadingLevel: number;
+
+  constructor (options?: {
+    baseHeadingLevel?: number;
+  }) {
+    this.baseHeadingLevel = options?.baseHeadingLevel ?? 1;
+  }
+
   processDocumentSync (doc: Document): string {
     const it = this.visitBlocks(doc.contents);
     let nextValue = '';
@@ -178,7 +186,7 @@ export abstract class Renderer implements SyntaxWalker<RendererWalkResult> {
   * visitHeading (st: Heading) {
     return yield this.renderHeading({
       id: st.id,
-      level: st.level,
+      level: this.baseHeadingLevel - 1 + st.level,
       renderedText: yield* this.visitRichText(st.text),
     });
   }
