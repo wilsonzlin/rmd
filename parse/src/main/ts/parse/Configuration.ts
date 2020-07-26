@@ -4,6 +4,7 @@ import {IPosition} from '../util/Position';
 import {Block} from './block/Block';
 
 export const ID_CHARS = /^[a-zA-Z0-9-_]+$/;
+export const REF_CHARS = /^[a-zA-Z0-9-_]+$/;
 
 export type Parser<B extends Block> = (chunks: Chunks) => B;
 export type ParserAcceptingConfiguration<B extends Block> = (chunks: Chunks, cfg: Configuration) => B;
@@ -25,6 +26,12 @@ export const configurableSyntaxParser = <B extends Block> (parser: Parser<B>, cf
         case 'id':
           if (!ID_CHARS.test(val)) {
             throw new SourceError(`Invalid ID: ${val}`, cfg.position);
+          }
+          break;
+
+        case 'ref':
+          if (!REF_CHARS.test(val)) {
+            throw new SourceError(`Invalid ref: ${val}`, cfg.position);
           }
           break;
 
